@@ -146,18 +146,27 @@ Edges:       [████████] 8+
 Scan Step:   [████████] 8+
 ```
 
+## Support & Contributing
+
+### Getting Help
+- 🐛 [Report bugs](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?template=bug_report.md)
+- 💡 [Request features](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?template=feature_request.md)
+- 📖 Check [documentation](docs/) for guides and explanations
+- ❓ Ask questions in [GitHub Discussions](https://github.com/kevinmartz/Rusty-Smart-Stitch/discussions)
+
+### Contributing
+Contributions! Please see [Contributing Guidelines](docs/CONTRIBUTING.md) for details on:
+- 🤝 Code of Conduct
+- 🔧 Development setup
+- 📝 Coding standards
+- 🔍 Pull request process
+- 📋 Issue reporting
 
 ## TODO (in no particular order)
 - ✅ Enhance the logic
 - [ ] Add a way to add a custom watermark
 - [ ] other upscalers other than waifu2x (like chainner)
 - [ ] enhacning my own upscaler
-
-
-## Support
-
-- 🐛 [Report issues on GitHub](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?assignees=&labels=&projects=&template=bug_report.md&title=)
-- 💡 [Feature requests welcome](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?assignees=&labels=&projects=&template=feature_request.md&title=)
 
 ## License
 
@@ -169,8 +178,6 @@ Key points:
 - ✅ Network use requires source distribution
 - ✅ Must include original license and copyright
 - ✅ Must state significant changes
-
-For commercial use permissions, please contact via GitHub.
 
 ## Acknowledgments
 
