@@ -152,7 +152,6 @@ Scan Step:   [████████] 8+
 - 🐛 [Report bugs](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?template=bug_report.md)
 - 💡 [Request features](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?template=feature_request.md)
 - 📖 Check [documentation](docs/) for guides and explanations
-- ❓ Ask questions in [GitHub Discussions](https://github.com/kevinmartz/Rusty-Smart-Stitch/discussions)
 
 ### Contributing
 Contributions! Please see [Contributing Guidelines](docs/CONTRIBUTING.md) for details on:
