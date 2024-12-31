@@ -156,8 +156,8 @@ Scan Step:   [████████] 8+
 
 ## Support
 
-- 🐛 [Report issues on GitHub](.github/ISSUE_TEMPLATE/bug_report.md)
-- 💡 [Feature requests welcome](.github/ISSUE_TEMPLATE/feature_request.md)
+- 🐛 [Report issues on GitHub](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?assignees=&labels=&projects=&template=bug_report.md&title=)
+- 💡 [Feature requests welcome](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?assignees=&labels=&projects=&template=feature_request.md&title=)
 
 ## License
 
