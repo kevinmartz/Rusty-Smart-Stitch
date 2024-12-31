@@ -156,8 +156,8 @@ Scan Step:   [████████] 8+
 
 ## Support
 
-- 🐛 Report issues on GitHub
-- 💡 Feature requests welcome
+- 🐛 [Report issues on GitHub](.github/ISSUE_TEMPLATE/bug_report.md)
+- 💡 [Feature requests welcome](.github/ISSUE_TEMPLATE/feature_request.md)
 
 ## License
 
