@@ -85,4 +85,8 @@ A row is considered good for slicing if either:
 
 4. **Combine with Scan Step**:
    - High sensitivity + low scan_step = Most precise (but slowest)
-   - Low sensitivity + high scan_step = Fastest (but less precise) 
+   - Low sensitivity + high scan_step = Fastest (but less precise)
+
+## Note on Recent Updates
+
+Please be aware that the `slicelogic` module has undergone significant updates. Ensure that you check the module for any changes that may affect how sensitivity is applied during image processing. 

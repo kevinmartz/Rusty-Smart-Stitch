@@ -1,26 +1,24 @@
-#![windows_subsystem = "windows"]  // Uncomment or comment this if you don't want a console window or want a console window
+#![windows_subsystem = "windows"] // Uncomment or comment this if you don't want a console window or want a console window
 
-mod checkupd;
-mod main_tab;
-mod advanced_tab;
 mod about_tab;
-mod style;
-mod process_handler;
+mod advanced_tab;
+mod checkupd;
 mod folder_handler;
-mod waifu2x_tab;
+mod main_tab;
+mod process_handler;
 mod profile;
+mod style;
+mod waifu2x_tab;
 
-use eframe::egui::{
-    self
-};
+use eframe::egui::{self};
 use egui::IconData;
 use egui::ViewportBuilder;
+use profile::Profile;
 use rusty_smart_stitch::RustySmartStitch;
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::time::Instant;
-use profile::Profile;
-use std::collections::VecDeque;
 
 #[derive(PartialEq)]
 enum Tab {
@@ -53,7 +51,8 @@ struct RustySmartStitchApp {
     manual_output_dir: String,
     root_input_path: Option<PathBuf>,
     root_output_dir: Option<PathBuf>,
-    
+    last_output_format: Option<String>, // Track the last used output format
+
     // Main settings
     rough_output_height: String,
     sensitivity: String,
@@ -61,7 +60,7 @@ struct RustySmartStitchApp {
     edges: String,
     output_format: String,
     output_quality: String,
-    
+
     // Progress tracking
     progress: f32,
     target_progress: f32,
@@ -72,11 +71,11 @@ struct RustySmartStitchApp {
     progress_rx: Option<Receiver<ProcessStatus>>,
     last_update: Option<Instant>,
     processed_folder_count: usize,
-    
+
     // UI stuff
     drag_hovering: bool,
     current_tab: Tab,
-    
+
     // Advanced settings
     custom_width_enabled: bool,
     custom_width: String,
@@ -85,18 +84,18 @@ struct RustySmartStitchApp {
     resize_enabled: bool,
     resize_width: String,
     resize_height: String,
-    
+
     // Update checker stuff
     checking_updates: bool,
     update_status_rx: Option<Receiver<UpdateStatus>>,
     current_update_status: Option<UpdateStatus>,
-    
+
     // UI elements
     drag_icon: Option<egui::TextureHandle>,
     current_progress_message: String,
     last_message_update: Option<Instant>,
     message_transition: f32,
-    
+
     // Waifu2x settings (yeah there's a lot)
     waifu2x_tta: bool,
     waifu2x_gpu: String,
@@ -117,7 +116,7 @@ struct RustySmartStitchApp {
     waifu2x_scale_mode: String,
     waifu2x_model: String,
     waifu2x_split_mode: String,
-    
+
     // Random stuff
     random_message: String,
     profiles: Vec<(String, Profile)>,
@@ -130,12 +129,13 @@ impl Default for RustySmartStitchApp {
         let config_dir = dirs::config_dir()
             .map(|d| d.join("rusty_smart_stitch"))
             .unwrap_or_default();
-        
-        let waifu2x_exe_path = if let Ok(content) = std::fs::read_to_string(config_dir.join("waifu2x_path.txt")) {
-            content
-        } else {
-            String::new()
-        };
+
+        let waifu2x_exe_path =
+            if let Ok(content) = std::fs::read_to_string(config_dir.join("waifu2x_path.txt")) {
+                content
+            } else {
+                String::new()
+            };
 
         // defaults
         let mut app = Self {
@@ -144,12 +144,14 @@ impl Default for RustySmartStitchApp {
             manual_output_dir: String::new(),
             root_input_path: None,
             root_output_dir: None,
-            rough_output_height: "800".to_string(),  // 800px is usually good enough
-            sensitivity: "100".to_string(),          // Max sensitivity to start, if you want more slices, lower this or set it to 0 for direct slicing
-            scan_step: "5".to_string(),             // Skip 5px at a time, but 10-15 is better for most cases
-            edges: "5".to_string(),                 // Default 5 pixels to ignore at edges
-            output_format: "jpg".to_string(),        // JPG by default cuz smaller files
-            output_quality: "90".to_string(),        // 90% quality is pretty good not really but eh
+            last_output_format: None,
+
+            rough_output_height: String::from("1000"),
+            sensitivity: String::from("100"),
+            scan_step: String::from("5"),
+            edges: String::from("5"),
+            output_format: String::from("jpg"),
+            output_quality: String::from("90"),
             progress: 0.0,
             target_progress: 0.0,
             processing: false,
@@ -160,7 +162,7 @@ impl Default for RustySmartStitchApp {
             last_update: None,
             processed_folder_count: 0,
             drag_hovering: false,
-            current_tab: Tab::Main,                  // Start in the main tab, duh
+            current_tab: Tab::Main, // Start in the main tab, duh
             custom_width_enabled: false,
             custom_width: "0".to_string(),
             upscale_enabled: false,
@@ -211,9 +213,7 @@ impl Default for RustySmartStitchApp {
 impl RustySmartStitchApp {
     // Profile management stuff
     fn create_profile(&mut self, name: String) {
-
         if let Some(index) = self.profiles.iter().position(|(n, _)| n == &name) {
-
             let profile = Profile {
                 rough_output_height: self.rough_output_height.clone(),
                 sensitivity: self.sensitivity.clone(),
@@ -346,7 +346,7 @@ impl RustySmartStitchApp {
             let file_dialog = native_dialog::FileDialog::new()
                 .set_filename(&filename)
                 .add_filter("JSON Profile", &["json"]);
-            
+
             if let Ok(Some(path)) = file_dialog.show_save_single_file() {
                 profile.save_to_file(&path)?;
             }
@@ -356,12 +356,12 @@ impl RustySmartStitchApp {
 
     // Import a profile from a file
     fn import_profile(&mut self) -> Result<(), anyhow::Error> {
-        let file_dialog = native_dialog::FileDialog::new()
-            .add_filter("JSON Profile", &["json"]);
-        
+        let file_dialog = native_dialog::FileDialog::new().add_filter("JSON Profile", &["json"]);
+
         if let Ok(Some(path)) = file_dialog.show_open_single_file() {
             let profile = Profile::load_from_file(&path)?;
-            let name = path.file_stem()
+            let name = path
+                .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("Imported Profile")
                 .to_string();
@@ -380,15 +380,15 @@ async fn main() -> Result<(), eframe::Error> {
 
     let mut options = eframe::NativeOptions::default();
     options.viewport = ViewportBuilder::default()
-        .with_inner_size([500.0, 730.0])           // Perfect size
-        .with_min_inner_size([500.0, 730.0])       // Don't let it get smaller
-        .with_max_inner_size([500.0, 730.0])       // Or bigger
-        .with_resizable(false)                     // Seriously, don't resize it
-        .with_maximized(false)                     // Or maximize it
-        .with_maximize_button(false)               // Or even try to maximize it
-        .with_transparent(false)                   // No transparency
-        .with_decorations(true)                    // Keep the window border
-        .with_icon(icon);                          // cool icon
+        .with_inner_size([484.0, 725.0]) // Perfect size
+        .with_min_inner_size([484.0, 720.0]) // Don't let it get smaller
+        .with_max_inner_size([484.0, 720.0]) // Or bigger
+        .with_resizable(false) // Seriously, don't resize it
+        .with_maximized(false) // Or maximize it
+        .with_maximize_button(false) // Or even try to maximize it
+        .with_transparent(false) // No transparency
+        .with_decorations(true) // Keep the window border
+        .with_icon(icon); // cool icon
 
     eframe::run_native(
         "Rusty Smart Stitch",
@@ -396,19 +396,18 @@ async fn main() -> Result<(), eframe::Error> {
         Box::new(|cc| {
             // Set up fonts
             let mut fonts = egui::FontDefinitions::default();
-            
+
             fonts.font_data.insert(
                 "pixel-font".to_owned(),
                 egui::FontData::from_static(include_bytes!("../assets/Broken-Console-Bold.ttf")),
             );
-            
+
             // emojis for folder icons and stuff
             fonts.font_data.insert(
                 "emoji-font".to_owned(),
                 egui::FontData::from_static(include_bytes!("../assets/NotoEmoji-Regular.ttf")),
             );
 
-            
             fonts.font_data.insert(
                 "progress-font".to_owned(),
                 egui::FontData::from_static(include_bytes!("../assets/bold.ttf")),
@@ -433,7 +432,7 @@ async fn main() -> Result<(), eframe::Error> {
                 .push("emoji-font".to_owned());
 
             cc.egui_ctx.set_fonts(fonts);
-            
+
             Ok(Box::new(RustySmartStitchApp::default()))
         }),
     )

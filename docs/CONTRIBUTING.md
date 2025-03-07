@@ -148,4 +148,15 @@ Contributors will be:
 - Credited in release notes
 - Thanked in documentation
 
+## Recent Changes in slicelogic Module
+
+The `slicelogic` module has undergone significant updates:
+
+- **RustySmartStitch Struct**: New parameters have been added for custom width, upscale options, and resizing capabilities.
+- **Image Processing**: The `process` method now includes enhanced functionality for handling PSD files and improved parallel processing for slice detection.
+- **Image Merging**: The merging functions have been optimized for performance, allowing for better handling of large image sets.
+- **Saving Options**: New formats and quality settings have been introduced for saving images, including support for WEBP format.
+
+Please ensure that any contributions reflect these changes and consider updating related documentation.
+
 Thank you for contributing to Rusty Smart Stitch! 

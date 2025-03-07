@@ -162,7 +162,7 @@ Contributions! Please see [Contributing Guidelines](docs/CONTRIBUTING.md) for de
 - 📋 Issue reporting
 
 ## TODO (in no particular order)
-- ✅ Enhance the logic
+- ✅ Enhance the logic (kinda)
 - [ ] Add a way to add a custom watermark
 - [ ] other upscalers other than waifu2x (like chainner)
 - [ ] enhacning my own upscaler

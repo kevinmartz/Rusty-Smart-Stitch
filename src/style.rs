@@ -1,17 +1,20 @@
-use eframe::egui::{self, Color32, Margin, Rounding, Stroke, Vec2, CentralPanel, RichText};
 use crate::{RustySmartStitchApp, Tab};
+use eframe::egui::{self, CentralPanel, Color32, Margin, RichText, Rounding, Stroke, Vec2};
 
 pub fn setup_style(ctx: &egui::Context) {
     let mut style = (*ctx.style()).clone();
-    
-    style.visuals.window_fill = Color32::from_rgb(35, 35, 35);       // Darker background
-    style.visuals.panel_fill = Color32::from_rgb(35, 35, 35);        // Darker background
-    style.visuals.faint_bg_color = Color32::from_rgb(28, 28, 28);    // same as above
+
+    style.visuals.window_fill = Color32::from_rgb(35, 35, 35); // Darker background
+    style.visuals.panel_fill = Color32::from_rgb(35, 35, 35); // Darker background
+    style.visuals.faint_bg_color = Color32::from_rgb(28, 28, 28); // same as above
     style.visuals.widgets.noninteractive.bg_fill = Color32::TRANSPARENT;
-    style.visuals.widgets.inactive.bg_fill = Color32::from_rgb(45, 45, 45);      // Button background
-    style.visuals.widgets.active.bg_fill = Color32::from_rgb(70, 70, 70);        // Pressed button
-    style.visuals.widgets.hovered.bg_fill = Color32::from_rgb(55, 55, 55);       // Hover state
-    style.visuals.selection.bg_fill = Color32::from_rgb(70, 70, 70);            // Selected items
+    style.visuals.widgets.inactive.bg_fill = Color32::from_rgb(45, 45, 45); // Button background
+    style.visuals.widgets.active.bg_fill = Color32::from_rgb(70, 70, 70); // Pressed button
+    style.visuals.widgets.hovered.bg_fill = Color32::from_rgb(55, 55, 55); // Hover state
+    style.visuals.selection.bg_fill = Color32::from_rgb(70, 70, 70); // Selected items
+
+    // Disable text selection
+    style.interaction.selectable_labels = false;
 
     // Completely sharp edges
     style.visuals.window_rounding = Rounding::same(0.0);
@@ -38,11 +41,10 @@ pub fn setup_style(ctx: &egui::Context) {
     style.spacing.button_padding = Vec2::new(6.0, 4.0);
 
     ctx.set_style(style);
-} 
+}
 
 impl eframe::App for RustySmartStitchApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        
         setup_style(ctx);
 
         if self.processing {
@@ -63,32 +65,32 @@ impl eframe::App for RustySmartStitchApp {
         CentralPanel::default().show(ctx, |ui| {
             // Disable all interactions when processing
             let enabled = !self.processing;
-            
+
             egui::TopBottomPanel::top("tabs").show_inside(ui, |ui| {
                 ui.add_enabled_ui(enabled, |ui| {
                     ui.horizontal(|ui| {
                         ui.selectable_value(&mut self.current_tab, Tab::Main, "Main");
-                        
+
                         // Advanced tab indicator
                         let advanced_text = if self.has_active_advanced_settings() {
                             RichText::new("Advanced •")
-                                .color(Color32::from_rgb(69, 133, 136))
+                                .color(Color32::from_rgb(14, 138, 199))
                                 .strong()
                         } else {
                             RichText::new("Advanced")
                         };
                         ui.selectable_value(&mut self.current_tab, Tab::Advanced, advanced_text);
-                        
+
                         // Waifu2x tab indicator
                         let waifu2x_text = if self.has_active_waifu2x() {
                             RichText::new("Waifu2x •")
-                                .color(Color32::from_rgb(69, 133, 136))
+                                .color(Color32::from_rgb(14, 138, 199))
                                 .strong()
                         } else {
                             RichText::new("Waifu2x")
                         };
                         ui.selectable_value(&mut self.current_tab, Tab::Waifu2x, waifu2x_text);
-                        
+
                         ui.selectable_value(&mut self.current_tab, Tab::About, "About");
                     });
                 });
@@ -98,14 +100,10 @@ impl eframe::App for RustySmartStitchApp {
                 Tab::Main => self.show_main(ui, enabled, ctx),
                 Tab::About => self.show_about(ui),
                 Tab::Advanced => {
-                    ui.add_enabled_ui(enabled, |ui| {
-                        self.show_advanced(ui)
-                    });
-                },
+                    ui.add_enabled_ui(enabled, |ui| self.show_advanced(ui));
+                }
                 Tab::Waifu2x => {
-                    ui.add_enabled_ui(enabled, |ui| {
-                        self.show_waifu2x(ui)
-                    });
+                    ui.add_enabled_ui(enabled, |ui| self.show_waifu2x(ui));
                 }
             }
         });

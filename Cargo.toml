@@ -1,10 +1,11 @@
 [package]
 name = "rusty-smart-stitch"
-version = "0.1.0"
+version = "1.0.7"
 edition = "2021"
+build = "build.rs"
 
 [profile.release]
-opt-level = 3
+opt-level = 2
 lto = "fat"
 debug = false
 codegen-units = 1
@@ -43,6 +44,8 @@ dirs = "5.0.0"
 serde_json = "1.0.133"
 mozjpeg = "0.10.12"
 webp = "0.3.0"
+sys-info = "0.9.1"
+chrono = "0.4.40"
 
 [lib]
 name = "rusty_smart_stitch"

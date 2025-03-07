@@ -167,3 +167,7 @@ This means:
 2. Lower edges = larger checked region
 3. No impact on processing speed
 4. Only affects what parts of each row are checked 
+
+## Note on Recent Updates
+
+Please be aware that the `slicelogic` module has undergone significant updates. Ensure that you check the module for any changes that may affect how edges are applied during image processing. 

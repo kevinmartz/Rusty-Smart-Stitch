@@ -1,14 +1,14 @@
-use std::time::{Duration, Instant};
-use std::sync::mpsc;
-use std::thread;
 use rand::seq::SliceRandom;
-use std::process::Command;
-use std::path::Path;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
+use std::path::Path;
+use std::process::Command;
+use std::sync::mpsc;
+use std::thread;
+use std::time::{Duration, Instant};
 
-use crate::{RustySmartStitchApp, ProcessStatus, RustySmartStitch};
-use eframe::egui::{self, Color32, RichText, Rect, Rounding, Stroke, Vec2};
+use crate::{ProcessStatus, RustySmartStitch, RustySmartStitchApp};
+use eframe::egui::{self, Color32, Rect, RichText, Rounding, Stroke, Vec2};
 use rusty_smart_stitch::waifu2x::Waifu2xConfig;
 
 // Shit for making the UI look good, but srs this is UI constants basicly you want to change these or comment them and use your own hardcoded values.
@@ -38,7 +38,8 @@ impl RustySmartStitchApp {
                 if let Some(total_folders) = self.get_total_folder_count() {
                     let processed_folders = self.processed_folder_count as f32;
                     let waifu2x_progress = (current as f32 / total as f32) * 0.5;
-                    let overall_progress = (processed_folders + 0.5 + waifu2x_progress) / (total_folders as f32);
+                    let overall_progress =
+                        (processed_folders + 0.5 + waifu2x_progress) / (total_folders as f32);
                     self.target_progress = overall_progress.min(1.0);
                 } else {
                     let waifu2x_progress = (current as f32 / total as f32) * 0.5;
@@ -58,7 +59,6 @@ impl RustySmartStitchApp {
         }
     }
 
-    // Get total number of folders to process
     fn get_total_folder_count(&self) -> Option<usize> {
         if let Some(ref queue) = self.pending_subfolders {
             Some(queue.len() + self.processed_folder_count + 1)
@@ -67,12 +67,12 @@ impl RustySmartStitchApp {
         }
     }
 
-    // checks if there's more folders to process
     fn complete_processing(&mut self) {
         if let Some(ref mut queue) = self.pending_subfolders {
             if !queue.is_empty() {
                 self.processed_folder_count += 1;
-                self.success_message = format!("Folder processed! Processing next subfolder...").to_uppercase();
+                self.success_message =
+                    format!("Folder processed! Processing next subfolder...").to_uppercase();
                 if self.process_next_subfolder() {
                     self.start_processing();
                 }
@@ -81,7 +81,8 @@ impl RustySmartStitchApp {
                 self.progress = 1.0;
                 self.target_progress = 1.0;
                 self.error_message.clear();
-                self.success_message = format!("Successfully processed all folders!").to_uppercase();
+                self.success_message =
+                    format!("Successfully processed all folders!").to_uppercase();
                 self.progress_rx = None;
                 self.last_update = None;
                 self.processed_folder_count = 0;
@@ -109,18 +110,25 @@ impl RustySmartStitchApp {
     }
 
     pub fn start_processing(&mut self) {
+        if self.progress_rx.is_none() {
+            if let Some(root_path) = &self.root_input_path {
+                self.processed_folder_count = 0;
+                self.add_folder_contents(root_path.clone());
+            }
+        }
+
         self.setup_output_directory();
-        
+
         if self.progress_rx.is_none() {
             self.initialize_processing_state();
         }
-        
+
         let processor = self.create_rusty_smart_stitch();
         let (tx, rx) = mpsc::channel();
-        
+
         self.spawn_processing_thread(processor, tx);
         self.progress_rx = Some(rx);
-        
+
         if self.current_progress_message.is_empty() {
             self.set_initial_progress_message();
         }
@@ -164,22 +172,34 @@ impl RustySmartStitchApp {
         )
     }
 
-    fn parse_and_clamp<T>(&self, value: &str, default: T, min: T, max: T) -> T 
+    fn parse_and_clamp<T>(&self, value: &str, default: T, min: T, max: T) -> T
     where
         T: std::str::FromStr + std::cmp::Ord,
     {
         value.parse::<T>().unwrap_or(default).clamp(min, max)
     }
 
-    fn spawn_processing_thread(&self, processor: RustySmartStitch, tx: mpsc::Sender<ProcessStatus>) {
+    fn spawn_processing_thread(
+        &self,
+        processor: RustySmartStitch,
+        tx: mpsc::Sender<ProcessStatus>,
+    ) {
         let waifu2x_enabled = self.waifu2x_enabled;
         let waifu2x_config = waifu2x_enabled.then(|| self.create_waifu2x_config());
         let output_dir = self.output_dir.as_ref().unwrap().clone();
         let output_quality = self.output_quality.clone();
 
         thread::spawn(move || {
-            if let Err(e) = Self::run_processing(processor, waifu2x_enabled, waifu2x_config, &output_dir, &output_quality, &tx) {
-                tx.send(ProcessStatus::Error(e.to_string())).unwrap_or_default();
+            if let Err(e) = Self::run_processing(
+                processor,
+                waifu2x_enabled,
+                waifu2x_config,
+                &output_dir,
+                &output_quality,
+                &tx,
+            ) {
+                tx.send(ProcessStatus::Error(e.to_string()))
+                    .unwrap_or_default();
             }
         });
     }
@@ -190,17 +210,15 @@ impl RustySmartStitchApp {
         waifu2x_config: Option<Waifu2xConfig>,
         output_dir: &Path,
         output_quality: &str,
-        tx: &mpsc::Sender<ProcessStatus>
+        tx: &mpsc::Sender<ProcessStatus>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // First the normal processing
-        processor.process_with_progress(|progress| {
-            tx.send(ProcessStatus::Progress(progress * 0.5)).unwrap_or_default();
-        })?;
+        processor.process(Some(|progress| {
+            tx.send(ProcessStatus::Progress(progress * 0.5))
+                .unwrap_or_default();
+        }))?;
 
-        // Then waifu2x if that's enabled
         if waifu2x_enabled {
             if let Some(config) = waifu2x_config {
-                // Run waifu2x on the output
                 Self::process_with_waifu2x(output_dir, &config, output_quality, tx)?;
             }
         }
@@ -209,12 +227,11 @@ impl RustySmartStitchApp {
         Ok(())
     }
 
-    // Run waifu2x on all the images
     fn process_with_waifu2x(
         output_dir: &Path,
         config: &Waifu2xConfig,
         output_quality: &str,
-        tx: &mpsc::Sender<ProcessStatus>
+        tx: &mpsc::Sender<ProcessStatus>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if !output_dir.exists() {
             return Ok(());
@@ -225,13 +242,14 @@ impl RustySmartStitchApp {
 
         for (i, entry) in files.into_iter().enumerate() {
             let input_path = entry.path();
-            let filename = input_path.file_name()
+            let filename = input_path
+                .file_name()
                 .unwrap_or_default()
                 .to_string_lossy()
                 .to_string();
 
             let cmd = Self::build_waifu2x_command(&input_path, config, output_quality)?;
-            
+
             tx.send(ProcessStatus::Waifu2xProgress(i + 1, total_files, filename))
                 .unwrap_or_default();
 
@@ -241,7 +259,7 @@ impl RustySmartStitchApp {
         Ok(())
     }
 
-    // the acutal waifu2x command builder is in waifu2x.rs it uses that as a base
+    // the acutal waifu2x command builder but it uses waifu2x.rs as a base
     // Sets up the waifu2x command with all its options
     fn build_waifu2x_command(
         input_path: &Path,
@@ -249,7 +267,7 @@ impl RustySmartStitchApp {
         output_quality: &str,
     ) -> Result<Command, Box<dyn std::error::Error>> {
         let mut cmd = Command::new(&config.executable_path);
-        
+
         if let Some(mode) = &config.mode {
             cmd.arg("-m").arg(mode);
         } else {
@@ -258,7 +276,7 @@ impl RustySmartStitchApp {
 
         Self::add_optional_arg(&mut cmd, "-n", config.noise_level, "1");
         Self::add_optional_arg(&mut cmd, "-s", config.scale_ratio, "2");
-        
+
         if let Some(model_dir) = &config.model_dir {
             cmd.arg("--model_dir").arg(model_dir);
         }
@@ -266,11 +284,12 @@ impl RustySmartStitchApp {
         // Quality and paths. quality will be set to the output quality from the UI
         cmd.arg("-q").arg(output_quality);
         cmd.arg("-i").arg(input_path);
-        
+
         let output_path = input_path.with_file_name(format!(
             "{}_waifu2x{}",
             input_path.file_stem().unwrap().to_string_lossy(),
-            input_path.extension()
+            input_path
+                .extension()
                 .map(|e| format!(".{}", e.to_string_lossy()))
                 .unwrap_or_default()
         ));
@@ -285,7 +304,6 @@ impl RustySmartStitchApp {
             cmd.arg("-p").arg(process);
         }
 
-        // handle split size, this is not used but it's here just in case if you want to add it in the future. just make sure to update the UI to match
         if let (Some(crop_w), Some(crop_h)) = (config.crop_w, config.crop_h) {
             cmd.arg("--crop_w").arg(crop_w.to_string());
             cmd.arg("--crop_h").arg(crop_h.to_string());
@@ -302,22 +320,35 @@ impl RustySmartStitchApp {
         Ok(cmd)
     }
 
-    fn add_optional_arg<T: std::fmt::Display>(cmd: &mut Command, flag: &str, value: Option<T>, default: &str) {
+    fn add_optional_arg<T: std::fmt::Display>(
+        cmd: &mut Command,
+        flag: &str,
+        value: Option<T>,
+        default: &str,
+    ) {
         match value {
-            Some(v) => { cmd.arg(flag).arg(v.to_string()); }
-            None if !default.is_empty() => { cmd.arg(flag).arg(default); }
+            Some(v) => {
+                cmd.arg(flag).arg(v.to_string());
+            }
+            None if !default.is_empty() => {
+                cmd.arg(flag).arg(default);
+            }
             _ => {}
         }
     }
 
     // run the waifu2x command
-    fn run_waifu2x_command(mut cmd: Command, input_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    fn run_waifu2x_command(
+        mut cmd: Command,
+        input_path: &Path,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         println!("Executing Waifu2x command: {:?}", cmd);
 
         let output_path = input_path.with_file_name(format!(
             "{}_waifu2x{}",
             input_path.file_stem().unwrap().to_string_lossy(),
-            input_path.extension()
+            input_path
+                .extension()
                 .map(|e| format!(".{}", e.to_string_lossy()))
                 .unwrap_or_default()
         ));
@@ -336,8 +367,9 @@ impl RustySmartStitchApp {
     }
 
     pub fn draw_progress_area(&mut self, ui: &mut egui::Ui, rect: Rect, available_height: f32) {
-        ui.painter().rect_filled(rect, Rounding::same(4.0), BACKGROUND_COLOR);
-        
+        ui.painter()
+            .rect_filled(rect, Rounding::same(4.0), BACKGROUND_COLOR);
+
         if self.processing {
             self.draw_processing_state(ui, rect, available_height);
         } else if !self.error_message.is_empty() {
@@ -349,13 +381,17 @@ impl RustySmartStitchApp {
 
     fn draw_processing_state(&mut self, ui: &mut egui::Ui, rect: Rect, available_height: f32) {
         let progress_width = rect.width() * self.progress;
-        
+
         ui.painter().rect_filled(
             Rect::from_min_size(rect.min, Vec2::new(progress_width, rect.height())),
             Rounding::same(4.0),
             PROGRESS_BAR_COLOR,
         );
-        ui.painter().rect_stroke(rect, Rounding::same(4.0), Stroke::new(BORDER_STROKE, BORDER_COLOR));
+        ui.painter().rect_stroke(
+            rect,
+            Rounding::same(4.0),
+            Stroke::new(BORDER_STROKE, BORDER_COLOR),
+        );
 
         self.draw_progress_message(ui, available_height);
         self.draw_random_message(ui);
@@ -374,14 +410,14 @@ impl RustySmartStitchApp {
                     RichText::new(&self.current_progress_message.to_uppercase())
                         .color(Color32::WHITE)
                         .size(21.0)
-                        .family(egui::FontFamily::Name("ProgressFont".into()))
+                        .family(egui::FontFamily::Name("ProgressFont".into())),
                 );
             } else {
                 ui.label(
                     RichText::new(format!("{:.1}%", self.progress * 100.0))
                         .color(Color32::WHITE)
                         .size(22.0)
-                        .family(egui::FontFamily::Name("PixelFont".into()))
+                        .family(egui::FontFamily::Name("PixelFont".into())),
                 );
             }
         });
@@ -394,35 +430,43 @@ impl RustySmartStitchApp {
                 RichText::new(&self.random_message)
                     .color(Color32::from_rgb(255, 255, 255))
                     .size(15.0)
-                    .family(egui::FontFamily::Name("ProgressFont".into()))
+                    .family(egui::FontFamily::Name("ProgressFont".into())),
             );
         });
     }
 
     fn draw_success_state(&self, ui: &mut egui::Ui, rect: Rect, available_height: f32) {
-        ui.painter().rect_stroke(rect, Rounding::ZERO, Stroke::new(BORDER_STROKE, BORDER_COLOR));
-        
+        ui.painter().rect_stroke(
+            rect,
+            Rounding::ZERO,
+            Stroke::new(BORDER_STROKE, BORDER_COLOR),
+        );
+
         ui.vertical_centered_justified(|ui| {
             ui.add_space(available_height / 2.0 - 10.0);
             ui.label(
                 RichText::new(&self.success_message)
                     .color(PROGRESS_BAR_COLOR)
                     .size(10.0)
-                    .family(egui::FontFamily::Name("PixelFont".into()))
+                    .family(egui::FontFamily::Name("PixelFont".into())),
             );
         });
     }
 
     fn draw_error_state(&self, ui: &mut egui::Ui, rect: Rect, available_height: f32) {
-        ui.painter().rect_stroke(rect, Rounding::ZERO, Stroke::new(BORDER_STROKE, Color32::from_rgb(255, 100, 100)));
-        
+        ui.painter().rect_stroke(
+            rect,
+            Rounding::ZERO,
+            Stroke::new(BORDER_STROKE, Color32::from_rgb(255, 100, 100)),
+        );
+
         ui.vertical_centered_justified(|ui| {
             ui.add_space(available_height / 2.0 - 10.0);
             ui.label(
                 RichText::new(&self.error_message)
                     .color(Color32::from_rgb(255, 100, 100))
                     .size(15.0)
-                    .family(egui::FontFamily::Name("ProgressFont".into()))
+                    .family(egui::FontFamily::Name("ProgressFont".into())),
             );
         });
     }
@@ -446,7 +490,7 @@ impl RustySmartStitchApp {
 
     fn update_messages(&mut self) {
         let now = Instant::now();
-        
+
         if self.last_message_update.is_none() {
             self.initialize_random_message(now);
         } else if let Some(last_update) = self.last_message_update {
@@ -465,15 +509,16 @@ impl RustySmartStitchApp {
             WAIFU2X_MESSAGES
         } else {
             PROGRESS_MESSAGES
-        }.choose(&mut rand::thread_rng())
-            .unwrap_or(&"Processing...")
-            .to_string()
+        }
+        .choose(&mut rand::thread_rng())
+        .unwrap_or(&"Processing...")
+        .to_string()
     }
 
     fn update_message_transition(&mut self, last_update: Instant, now: Instant) {
         if last_update.elapsed() > MESSAGE_UPDATE_INTERVAL {
             self.message_transition = (self.message_transition - FADE_STEP).max(0.0);
-            
+
             if self.message_transition <= 0.0 {
                 self.random_message = self.choose_random_message();
                 self.last_message_update = Some(now);
@@ -509,65 +554,66 @@ impl RustySmartStitchApp {
 
     fn create_waifu2x_config(&self) -> Waifu2xConfig {
         let mut config = Waifu2xConfig::default();
-        
 
         config.executable_path = self.waifu2x_exe_path.clone();
-        
+
         config.model = self.waifu2x_model.clone();
         config.model_dir = Some(format!("models/{}", self.waifu2x_model));
-        
+
         if self.waifu2x_tta {
             config.tta = Some(true);
         }
-        
+
         if let Ok(gpu) = self.waifu2x_gpu.parse() {
             config.gpu = Some(gpu);
         }
-        
+
         if let Ok(batch_size) = self.waifu2x_batch_size.parse() {
             config.batch_size = Some(batch_size);
         }
-        
+
         if self.waifu2x_split_mode == "custom" {
-            if let (Ok(crop_w), Ok(crop_h)) = (self.waifu2x_crop_w.parse(), self.waifu2x_crop_h.parse()) {
+            if let (Ok(crop_w), Ok(crop_h)) =
+                (self.waifu2x_crop_w.parse(), self.waifu2x_crop_h.parse())
+            {
                 config.crop_w = Some(crop_w);
                 config.crop_h = Some(crop_h);
             }
         } else {
             config.crop_size = Some(128);
         }
-        
+
         if let Ok(output_depth) = self.waifu2x_output_depth.parse() {
             config.output_depth = Some(output_depth);
         }
-        
+
         config.process = Some(self.waifu2x_process.clone());
-        
+
         if !self.waifu2x_model_dir.is_empty() {
             config.model_dir = Some(self.waifu2x_model_dir.clone());
         }
-        
+
         if let Ok(scale_height) = self.waifu2x_scale_height.parse() {
             config.scale_height = Some(scale_height);
         }
-        
+
         if let Ok(scale_width) = self.waifu2x_scale_width.parse() {
             config.scale_width = Some(scale_width);
         }
-        
+
         if let Ok(scale_ratio) = self.waifu2x_scale_ratio.parse() {
             config.scale_ratio = Some(scale_ratio);
         }
-        
+
         if let Ok(noise_level) = self.waifu2x_noise_level.parse() {
             config.noise_level = Some(noise_level);
         }
-        
+
         config.mode = Some(self.waifu2x_mode.clone());
-        
+
         // Uses the main output format
         config.output_extension = Some(self.output_format.clone());
-        
+
         config
     }
 }

@@ -1,16 +1,15 @@
-use std::path::PathBuf;
-use std::fs;
-use std::env;
-use std::io;
-use serde::{Deserialize, Serialize};
-use semver::Version;
+use anyhow::{bail, Context, Result};
 use reqwest;
-use anyhow::{Result, Context, bail};
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
+use semver::Version;
+use serde::{Deserialize, Serialize};
+use std::env;
+use std::fs;
+use std::io;
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::PermissionsExt;
-
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+use std::path::PathBuf;
 
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const GITHUB_OWNER: &str = "kevinmartz";
@@ -37,14 +36,14 @@ pub struct Updater {
 
 impl Updater {
     pub fn new() -> Result<Self> {
-        let current_version = Version::parse(CURRENT_VERSION)
-            .context("Failed to parse current version")?;
-        
-        let executable_path = env::current_exe()
-            .context("Failed to get current executable path")?;
-            
+        let current_version =
+            Version::parse(CURRENT_VERSION).context("Failed to parse current version")?;
+
+        let executable_path =
+            env::current_exe().context("Failed to get current executable path")?;
+
         let temp_dir = env::temp_dir().join("rusty_smart_stitch_update");
-        
+
         Ok(Self {
             current_version,
             executable_path,
@@ -52,7 +51,7 @@ impl Updater {
         })
     }
 
-    // Asks GitHub if there's a new version available if there is it returns the info about the release if not it returns none. 
+    // Asks GitHub if there's a new version available if there is it returns the info about the release if not it returns none.
     // im new to this github api stuff so i dont know if this is the best way to do it but it works.
     pub async fn check_for_updates(&self) -> Result<Option<ReleaseInfo>> {
         let client = reqwest::Client::new();
@@ -78,9 +77,8 @@ impl Updater {
             .context("Failed to parse release information")?;
 
         // Get rid of the 'v' in front of version numbers
-        let release_version = Version::parse(
-            release_info.tag_name.trim_start_matches('v')
-        ).context("Failed to parse release version")?;
+        let release_version = Version::parse(release_info.tag_name.trim_start_matches('v'))
+            .context("Failed to parse release version")?;
 
         // checks if the new version is actually newer
         if release_version > self.current_version {
@@ -92,10 +90,10 @@ impl Updater {
 
     // Downloads new version
     pub async fn download_update(&self, release: &ReleaseInfo) -> Result<PathBuf> {
-        fs::create_dir_all(&self.temp_dir)
-            .context("Failed to create temporary directory")?;
+        fs::create_dir_all(&self.temp_dir).context("Failed to create temporary directory")?;
 
-        let asset = self.get_platform_asset(release)
+        let asset = self
+            .get_platform_asset(release)
             .context("No compatible release asset found")?;
 
         let client = reqwest::Client::new();
@@ -108,17 +106,18 @@ impl Updater {
         let new_binary_path = self.temp_dir.join(
             self.executable_path
                 .file_name()
-                .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Invalid executable name"))?
+                .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Invalid executable name"))?,
         );
 
-        let mut file = fs::File::create(&new_binary_path)
-            .context("Failed to create temporary file")?;
-        
-        let content = response.bytes().await
+        let mut file =
+            fs::File::create(&new_binary_path).context("Failed to create temporary file")?;
+
+        let content = response
+            .bytes()
+            .await
             .context("Failed to get response bytes")?;
-            
-        io::copy(&mut content.as_ref(), &mut file)
-            .context("Failed to write update file")?;
+
+        io::copy(&mut content.as_ref(), &mut file).context("Failed to write update file")?;
 
         #[cfg(target_family = "unix")]
         {
@@ -142,7 +141,9 @@ impl Updater {
             return None;
         };
 
-        release.assets.iter()
+        release
+            .assets
+            .iter()
             .find(|asset| asset.name.contains(platform_suffix))
             .cloned()
     }
@@ -169,7 +170,7 @@ impl Updater {
     #[cfg(target_os = "windows")]
     fn apply_update_windows(&self, new_binary_path: PathBuf) -> Result<()> {
         use std::process::Command;
-        
+
         // makes a batch script to do the dirty work
         let batch_script = self.temp_dir.join("update.bat");
         let script_content = format!(
@@ -183,8 +184,7 @@ impl Updater {
             self.executable_path.display()
         );
 
-        fs::write(&batch_script, script_content)
-            .context("Failed to create update script")?;
+        fs::write(&batch_script, script_content).context("Failed to create update script")?;
 
         // runs the script without showing a window
         Command::new("cmd")
@@ -204,7 +204,7 @@ impl Updater {
     #[cfg(target_os = "linux")]
     fn apply_update_linux(&self, new_binary_path: PathBuf) -> Result<()> {
         use std::process::Command;
-        
+
         // makes a shell script to do the dirty work
         let shell_script = self.temp_dir.join("update.sh");
         let script_content = format!(
@@ -218,8 +218,7 @@ impl Updater {
             self.executable_path.display()
         );
 
-        fs::write(&shell_script, script_content)
-            .context("Failed to create update script")?;
+        fs::write(&shell_script, script_content).context("Failed to create update script")?;
 
         fs::set_permissions(&shell_script, fs::Permissions::from_mode(0o755))
             .context("Failed to set script permissions")?;

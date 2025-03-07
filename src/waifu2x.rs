@@ -1,5 +1,5 @@
-use std::process::Command;
 use anyhow::Result;
+use std::process::Command;
 
 #[derive(Debug, Clone)]
 pub struct Waifu2xConfig {
@@ -9,22 +9,23 @@ pub struct Waifu2xConfig {
     pub executable_path: String,
     pub model: String,
 
+    // for better understanding of what each option does, please refer to the waifu2x documentation
     // Optional parameters
-    pub tta: Option<bool>,              // 8x slower and slightly high quality
-    pub gpu: Option<i32>,               // gpu device no
-    pub batch_size: Option<i32>,        // input batch size
-    pub crop_h: Option<i32>,            // input image split size(height)
-    pub crop_w: Option<i32>,            // input image split size(width)
-    pub crop_size: Option<i32>,         // input image split size
-    pub output_depth: Option<i32>,      // output image channel depth bit
-    pub output_quality: Option<i32>,    // output image quality
-    pub process: Option<String>,        // process mode: cpu|gpu|cudnn
-    pub model_dir: Option<String>,      // path to custom model directory
-    pub scale_height: Option<f64>,      // custom scale height
-    pub scale_width: Option<f64>,       // custom scale width
-    pub scale_ratio: Option<f64>,       // custom scale ratio
-    pub noise_level: Option<i32>,       // noise reduction level: 0|1|2|3
-    pub mode: Option<String>,           // image processing mode: noise|scale|noise_scale|auto_scale
+    pub tta: Option<bool>,                // 8x slower and slightly high quality
+    pub gpu: Option<i32>,                 // gpu device no
+    pub batch_size: Option<i32>,          // input batch size
+    pub crop_h: Option<i32>,              // input image split size(height)
+    pub crop_w: Option<i32>,              // input image split size(width)
+    pub crop_size: Option<i32>,           // input image split size
+    pub output_depth: Option<i32>,        // output image channel depth bit
+    pub output_quality: Option<i32>,      // output image quality
+    pub process: Option<String>,          // process mode: cpu|gpu|cudnn
+    pub model_dir: Option<String>,        // path to custom model directory
+    pub scale_height: Option<f64>,        // custom scale height
+    pub scale_width: Option<f64>,         // custom scale width
+    pub scale_ratio: Option<f64>,         // custom scale ratio
+    pub noise_level: Option<i32>,         // noise reduction level: 0|1|2|3
+    pub mode: Option<String>, // image processing mode: noise|scale|noise_scale|auto_scale
     pub output_extension: Option<String>, // extension for output image file
     pub input_extension_list: Option<String>, // extension for input image files
 }
@@ -152,4 +153,4 @@ impl Waifu2xConfig {
         cmd.spawn()?.wait()?;
         Ok(())
     }
-} 
+}

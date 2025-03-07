@@ -5,18 +5,21 @@ A detailed breakdown of how RustySmartStitch processes images, from loading to f
 ## 1. Initial Loading Process 📥
 
 ### PSD File Handling
+
+The process for handling PSD files has been updated to improve efficiency and accuracy:
+
 ```rust
-fn convert_psd_to_png(&self, psd_path: &PathBuf) -> Result<Vec<u8>>
+fn convert_psd_to_dynamic_image(&self, psd_path: &PathBuf) -> Result<DynamicImage>
 ```
-The process converts PSD files through these steps:
+
+The updated process converts PSD files through these steps:
 ```
-[PSD File] -> [Flatten Layers] -> [RGBA Convert] -> [Chunk Process] -> [PNG in Memory]
-   📁            ⬇️                 🎨              🔄              📦
+[PSD File] -> [Convert to Dynamic Image] -> [Process Layers] -> [Return Image]
+   📁            ⬇️                     🔄              📦
 ```
-1. Layer flattening (combines all layers)
-2. RGBA conversion (full color + transparency)
-3. Chunk-based processing for memory efficiency
-4. In-memory PNG conversion
+1. **Convert to Dynamic Image**: The PSD file is converted directly to a `DynamicImage` format.
+2. **Process Layers**: Each layer is processed to ensure that transparency and color information are preserved.
+3. **Return Image**: The final dynamic image is returned for further processing in the pipeline.
 
 ### Regular Image Loading
 - Direct loading for standard formats (JPG, PNG, etc.)
@@ -252,3 +255,25 @@ match self.output_format.as_str() {
     "webp" => handle_webp_conversion(),
     _ => handle_jpg_fallback()
 }
+```
+
+## 3. RustySmartStitch Struct Updates
+
+The `RustySmartStitch` struct has been updated with new parameters:
+- **custom_width**: Allows users to specify a custom width for output images.
+- **upscale_enabled**: A boolean flag to enable or disable upscaling of images.
+- **upscale_factor**: Specifies the factor by which to upscale images.
+- **resize_enabled**: A boolean flag to enable or disable resizing of images.
+- **resize_width** and **resize_height**: Specify dimensions for resizing images.
+
+## 4. Enhanced Image Processing
+
+The `process` method has been improved to handle PSD files more effectively and includes parallel processing for slice detection:
+- **PSD Handling**: The method now converts PSD files to dynamic images, allowing for better integration with the processing pipeline.
+- **Parallel Processing**: Slices are processed in parallel, improving performance when handling large images.
+
+## 5. New Image Saving Options
+
+New formats and quality settings have been introduced for saving images:
+- **WEBP Support**: Users can now save images in WEBP format with adjustable quality settings.
+- **Quality Control**: The saving functions allow for specifying quality levels for JPEG and WEBP formats.

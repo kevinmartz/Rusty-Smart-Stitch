@@ -1,8 +1,8 @@
-use eframe::egui::{self, Color32, RichText, Ui, Stroke, Rounding, Frame, Vec2};
-use std::sync::mpsc::{self, Sender, Receiver};
+use crate::checkupd::Updater;
 use crate::RustySmartStitchApp;
 use crate::UpdateStatus;
-use crate::checkupd::Updater;
+use eframe::egui::{self, Color32, Frame, RichText, Rounding, Stroke, Ui, Vec2};
+use std::sync::mpsc::{self, Receiver, Sender};
 use webbrowser;
 
 impl RustySmartStitchApp {
@@ -41,7 +41,7 @@ impl RustySmartStitchApp {
             ui.label(
                 RichText::new("A smart stitch made in Rust for efficient and reliable stitching")
                     .size(14.0)
-                    .color(Color32::from_rgb(161, 161, 170)) // zinc-400
+                    .color(Color32::from_rgb(161, 161, 170)), // zinc-400
             );
             ui.add_space(12.0);
 
@@ -50,29 +50,45 @@ impl RustySmartStitchApp {
                     ui.heading(
                         RichText::new("Project Info")
                             .size(16.0)
-                            .color(Color32::from_rgb(14, 138, 199))
+                            .color(Color32::from_rgb(14, 138, 199)),
                     );
                 });
                 ui.add_space(4.0);
-                
+
                 let table_width = ui.available_width();
                 egui::Grid::new("project_info_grid")
                     .spacing(Vec2::new(table_width * 0.5, 4.0))
                     .show(ui, |ui| {
-                        ui.label(RichText::new("Developer").size(14.0).color(Color32::from_rgb(161, 161, 170)));
+                        ui.label(
+                            RichText::new("Developer")
+                                .size(14.0)
+                                .color(Color32::from_rgb(161, 161, 170)),
+                        );
                         ui.label(RichText::new("Regis").size(14.0).strong());
                         ui.end_row();
 
-                        ui.label(RichText::new("License").size(14.0).color(Color32::from_rgb(161, 161, 170)));
+                        ui.label(
+                            RichText::new("License")
+                                .size(14.0)
+                                .color(Color32::from_rgb(161, 161, 170)),
+                        );
                         ui.label(RichText::new("MIT License").size(14.0));
                         ui.end_row();
 
-                        ui.label(RichText::new("Build Date").size(14.0).color(Color32::from_rgb(161, 161, 170)));
-                        ui.label(RichText::new("11/11/2024").size(14.0));
+                        ui.label(
+                            RichText::new("Build Date")
+                                .size(14.0)
+                                .color(Color32::from_rgb(161, 161, 170)),
+                        );
+                        ui.label(RichText::new("3/7/2025").size(14.0));
                         ui.end_row();
 
-                        ui.label(RichText::new("Version").size(14.0).color(Color32::from_rgb(161, 161, 170)));
-                        ui.label(RichText::new("1.0.0").size(14.0));
+                        ui.label(
+                            RichText::new("Version")
+                                .size(14.0)
+                                .color(Color32::from_rgb(161, 161, 170)),
+                        );
+                        ui.label(RichText::new("1.0.7").size(14.0));
                         ui.end_row();
                     });
             });
@@ -83,7 +99,7 @@ impl RustySmartStitchApp {
                     ui.heading(
                         RichText::new("Description")
                             .size(16.0)
-                            .color(Color32::from_rgb(14, 138, 199))
+                            .color(Color32::from_rgb(14, 138, 199)),
                     );
                 });
                 ui.add_space(4.0);
@@ -91,10 +107,10 @@ impl RustySmartStitchApp {
                     RichText::new(
                         "Rusty Smart Stitch is a stitching solution built with Rust. \
                         It combines the power of smart algorithms with the reliability of Rust, \
-                        offering a fast, efficient stitching experience."
+                        offering a fast, efficient stitching experience.",
                     )
                     .size(13.0)
-                    .color(Color32::from_rgb(212, 212, 216))
+                    .color(Color32::from_rgb(212, 212, 216)),
                 );
             });
             ui.add_space(8.0);
@@ -106,28 +122,31 @@ impl RustySmartStitchApp {
                     Some(UpdateStatus::Complete) => {
                         self.checking_updates = false;
                         "Update check complete"
-                    },
+                    }
                     Some(UpdateStatus::Error(_)) => "Update check failed",
-                    None => "Checking for updates..."
+                    None => "Checking for updates...",
                 };
 
                 ui.label(
                     RichText::new(status_text)
                         .color(Color32::from_rgb(255, 255, 255))
-                        .size(14.0)
+                        .size(14.0),
                 );
             } else {
-                if ui.button(
-                    RichText::new("🔄 Check for Updates")
-                        .size(14.0)
-                        .color(Color32::from_rgb(212, 212, 216))
-                ).clicked() {
+                if ui
+                    .button(
+                        RichText::new("🔄 Check for Updates")
+                            .size(14.0)
+                            .color(Color32::from_rgb(212, 212, 216)),
+                    )
+                    .clicked()
+                {
                     self.checking_updates = true;
                     let updater = Updater::new().expect("Failed to initialize updater");
                     let (tx, rx): (Sender<UpdateStatus>, Receiver<UpdateStatus>) = mpsc::channel();
                     self.update_status_rx = Some(rx);
                     self.current_update_status = None;
-                    
+
                     tokio::spawn(async move {
                         match updater.check_for_updates().await {
                             Ok(Some(release)) => {
@@ -140,26 +159,41 @@ impl RustySmartStitchApp {
                                                 Ok(_) => (),
                                                 Err(e) => {
                                                     eprintln!("Update failed: {}", e);
-                                                    show_info_dialog("Update failed. Please try again later.");
-                                                    tx.send(UpdateStatus::Error(())).unwrap_or_default();
+                                                    show_info_dialog(
+                                                        "Update failed. Please try again later.",
+                                                    );
+                                                    tx.send(UpdateStatus::Error(()))
+                                                        .unwrap_or_default();
                                                     let tx_clone = tx.clone();
                                                     tokio::spawn(async move {
-                                                        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                                                        tx_clone.send(UpdateStatus::Complete).unwrap_or_default();
+                                                        tokio::time::sleep(
+                                                            tokio::time::Duration::from_secs(2),
+                                                        )
+                                                        .await;
+                                                        tx_clone
+                                                            .send(UpdateStatus::Complete)
+                                                            .unwrap_or_default();
                                                     });
-                                                },
+                                                }
                                             }
                                         }
                                         Err(e) => {
                                             eprintln!("Download failed: {}", e);
-                                            show_info_dialog("Download failed. Please try again later.");
+                                            show_info_dialog(
+                                                "Download failed. Please try again later.",
+                                            );
                                             tx.send(UpdateStatus::Error(())).unwrap_or_default();
                                             let tx_clone = tx.clone();
                                             tokio::spawn(async move {
-                                                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                                                tx_clone.send(UpdateStatus::Complete).unwrap_or_default();
+                                                tokio::time::sleep(
+                                                    tokio::time::Duration::from_secs(2),
+                                                )
+                                                .await;
+                                                tx_clone
+                                                    .send(UpdateStatus::Complete)
+                                                    .unwrap_or_default();
                                             });
-                                        },
+                                        }
                                     }
                                 } else {
                                     tx.send(UpdateStatus::Complete).unwrap_or_default();
@@ -178,17 +212,20 @@ impl RustySmartStitchApp {
                                     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                                     tx_clone.send(UpdateStatus::Complete).unwrap_or_default();
                                 });
-                            },
+                            }
                         }
                     });
                 }
             }
 
-            if ui.button(
-                RichText::new("📦 View on GitHub")
-                    .size(14.0)
-                    .color(Color32::from_rgb(212, 212, 216))
-            ).clicked() {
+            if ui
+                .button(
+                    RichText::new("📦 View on GitHub")
+                        .size(14.0)
+                        .color(Color32::from_rgb(212, 212, 216)),
+                )
+                .clicked()
+            {
                 Self::open_url("https://github.com/kevinmartz/Rusty-Smart-Stitch");
             }
             ui.add_space(8.0);
@@ -199,7 +236,7 @@ impl RustySmartStitchApp {
                     ui.heading(
                         RichText::new("Acknowledgments")
                             .size(16.0)
-                            .color(Color32::from_rgb(14, 138, 199))
+                            .color(Color32::from_rgb(14, 138, 199)),
                     );
                 });
                 ui.add_space(4.0);
@@ -207,20 +244,23 @@ impl RustySmartStitchApp {
                     ui.label(
                         RichText::new("Special thanks to:")
                             .size(13.0)
-                            .color(Color32::from_rgb(212, 212, 216))
+                            .color(Color32::from_rgb(212, 212, 216)),
                     );
-                    
+
                     ui.horizontal(|ui| {
                         ui.label(
                             RichText::new("Manas for his idea and inspiration - ")
                                 .size(13.0)
-                                .color(Color32::from_rgb(212, 212, 216))
+                                .color(Color32::from_rgb(212, 212, 216)),
                         );
-                        if ui.link(
-                            RichText::new("Visit GitHub")
-                                .size(13.0)
-                                .color(Color32::from_rgb(14, 138, 199))
-                        ).clicked() {
+                        if ui
+                            .link(
+                                RichText::new("Visit GitHub")
+                                    .size(13.0)
+                                    .color(Color32::from_rgb(14, 138, 199)),
+                            )
+                            .clicked()
+                        {
                             Self::open_url("https://github.com/Manas140");
                         }
                     });
@@ -229,29 +269,17 @@ impl RustySmartStitchApp {
                         ui.label(
                             RichText::new("lltcggie for waifu2x-caffe - ")
                                 .size(13.0)
-                                .color(Color32::from_rgb(212, 212, 216))
+                                .color(Color32::from_rgb(212, 212, 216)),
                         );
-                        if ui.link(
-                            RichText::new("Visit GitHub")
-                                .size(13.0)
-                                .color(Color32::from_rgb(14, 138, 199))
-                        ).clicked() {
+                        if ui
+                            .link(
+                                RichText::new("Visit GitHub")
+                                    .size(13.0)
+                                    .color(Color32::from_rgb(14, 138, 199)),
+                            )
+                            .clicked()
+                        {
                             Self::open_url("https://github.com/lltcggie/waifu2x-caffe");
-                        }
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            RichText::new("MechTechnology's SmartStitch code served as a foundation - ")
-                                .size(13.0)
-                                .color(Color32::from_rgb(212, 212, 216))
-                        );
-                        if ui.link(
-                            RichText::new("Visit GitHub")
-                                .size(13.0)
-                                .color(Color32::from_rgb(14, 138, 199))
-                        ).clicked() {
-                            Self::open_url("https://github.com/MechTechnology/SmartStitch");
                         }
                     });
                 });
@@ -262,18 +290,16 @@ impl RustySmartStitchApp {
             ui.label(
                 RichText::new("© 2024 Rusty Smart Stitch. All rights reserved.")
                     .size(12.0)
-                    .color(Color32::from_rgb(161, 161, 170))
+                    .color(Color32::from_rgb(161, 161, 170)),
             );
         });
     }
 }
 
-
 pub fn confirm_update_dialog(release: &crate::checkupd::ReleaseInfo) -> bool {
     let message = format!(
         "A new version {} is available!\n\nRelease Notes:\n{}",
-        release.tag_name,
-        release.body
+        release.tag_name, release.body
     );
 
     match native_dialog::MessageDialog::new()
@@ -294,4 +320,4 @@ pub fn show_info_dialog(message: &str) {
         .set_type(native_dialog::MessageType::Info)
         .show_alert()
         .unwrap_or_default();
-} 
+}

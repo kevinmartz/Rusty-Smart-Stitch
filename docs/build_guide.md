@@ -40,7 +40,7 @@ This guide will walk you through building Rusty Smart Stitch from source.
 ```
 rusty-smart-stitch/
 ├── src/
-│   ├── lib.rs           # Core image processing logic
+│   ├── lib.rs           # Core image processing logic 
 │   ├── main.rs          # GUI and entry point
 │   ├── main_tab.rs      # Main interface tab
 │   ├── advanced_tab.rs  # Advanced settings tab
@@ -50,7 +50,13 @@ rusty-smart-stitch/
 │   ├── checkupd.rs      # Update system
 │   ├── process_handler.rs # Processing logic
 │   ├── folder_handler.rs # File management
-│   └── style.rs         # UI styling
+│   ├── style.rs         # UI styling
+│   └── slicelogic/      # Image slicing logic
+│       ├── processor.rs  # Main processing logic
+│       ├── image_merger.rs # Image merging logic
+│       ├── image_saver.rs  # Image saving logic
+│       ├── slice_location.rs # Slice location detection
+│       └── psd_sup.rs    # PSD support functions
 ├── assets/              # Icons and resources
 ├── docs/               # Documentation
 └── build.rs           # Build configuration
@@ -70,7 +76,7 @@ The project uses several key dependencies (from `Cargo.toml`):
   - image = "0.25.5"
   - webp = "0.3.0"
   - mozjpeg = "0.10.12"
-  - psd = "0.3.5"
+  - psd = "0.3.5"  # Ensure this is up-to-date with the latest handling changes
 
 - **File Handling**:
   - native-dialog = "0.7.0"
@@ -116,12 +122,13 @@ winres = "0.1.12"  # Windows resource handling
 
    Linux:
    ```bash
-   cargo build --target x86_64-unknown-linux-gnu --release
+   cargo build --release
+   cargo build --target x86_64-unknown-linux-gnu --release // if you are building on windows check .cargo/config.toml
    ```
 
    macOS:
    ```bash
-   cargo build --target aarch64-apple-darwin --release
+   cargo build --release
    ```
 
    The binary will be at:
@@ -197,4 +204,8 @@ cargo test
 
 - [Project Issues](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues)
 - [egui Documentation](https://docs.rs/egui/0.29.1/egui/)
-- [Rust Book](https://doc.rust-lang.org/book/) 
+- [Rust Book](https://doc.rust-lang.org/book/)
+
+## Note on slicelogic Module Changes
+
+Please be aware that the `slicelogic` module has undergone significant updates, particularly in how PSD files are handled. Ensure that you check the module for any new dependencies or changes that may affect the build process. 

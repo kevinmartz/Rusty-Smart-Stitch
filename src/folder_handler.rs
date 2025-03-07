@@ -1,31 +1,36 @@
-use std::path::PathBuf;
 use crate::RustySmartStitchApp;
-use native_dialog::FileDialog;
-use std::path::Path;
 use eframe::egui;
+use native_dialog::FileDialog;
 use std::collections::VecDeque;
+use std::path::Path;
+use std::path::PathBuf;
 
 impl RustySmartStitchApp {
-
     pub fn add_folder_contents(&mut self, folder_path: PathBuf) -> bool {
         println!("Processing folder: {:?}", folder_path);
 
         self.root_input_path = Some(folder_path.clone());
         self.input_paths.clear();
-        
-        // Set the root output directory with the selected format
+
         if let Some(parent) = folder_path.parent() {
-            let root_name = folder_path.file_name().unwrap_or_default().to_string_lossy();
+            let root_name = folder_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy();
             let output_root_name = format!("{}_{}", root_name, self.output_format);
             self.root_output_dir = Some(parent.join(output_root_name));
             self.output_dir = Some(self.root_output_dir.as_ref().unwrap().clone());
-            self.manual_output_dir = self.output_dir.as_ref().unwrap().to_string_lossy().to_string();
+            self.manual_output_dir = self
+                .output_dir
+                .as_ref()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
             println!("Set root output dir to: {:?}", self.root_output_dir);
         }
-        
+
         let mut subfolder_queue = VecDeque::new();
 
-        // First grab all the files from the main folder
         if let Ok(entries) = std::fs::read_dir(&folder_path) {
             for entry in entries.filter_map(|e| e.ok()) {
                 let path = entry.path();
@@ -45,22 +50,27 @@ impl RustySmartStitchApp {
         }
 
         if self.input_paths.is_empty() && !subfolder_queue.is_empty() {
-            // Sort it so it's not random
             let mut subfolder_vec: Vec<_> = subfolder_queue.drain(..).collect();
-            subfolder_vec.sort();
-            
+            subfolder_vec.sort_by(|a, b| {
+                let a_num = a.file_name().unwrap_or_default().to_string_lossy().parse::<u32>().unwrap_or(0);
+                let b_num = b.file_name().unwrap_or_default().to_string_lossy().parse::<u32>().unwrap_or(0);
+                a_num.cmp(&b_num)
+            });
+
             while let Some(current_folder) = subfolder_vec.first() {
                 println!("Checking subfolder: {:?}", current_folder);
                 let mut has_files = false;
                 let mut inner_subfolders = VecDeque::new();
-                
+
                 if let Ok(entries) = std::fs::read_dir(current_folder) {
                     for entry in entries.filter_map(|e| e.ok()) {
                         let path = entry.path();
                         if path.is_file() {
                             if let Some(ext) = path.extension() {
                                 let ext = ext.to_string_lossy().to_lowercase();
-                                if ["png", "jpg", "jpeg", "webp", "bmp", "psd"].contains(&ext.as_str()) {
+                                if ["png", "jpg", "jpeg", "webp", "bmp", "psd"]
+                                    .contains(&ext.as_str())
+                                {
                                     println!("Adding file: {:?}", path);
                                     self.input_paths.push(path);
                                     has_files = true;
@@ -80,7 +90,6 @@ impl RustySmartStitchApp {
                         }
                     }
 
-                    // Queue remaining folders
                     let mut remaining_queue = VecDeque::new();
                     remaining_queue.extend(subfolder_vec[1..].iter().cloned());
                     remaining_queue.extend(inner_subfolders);
@@ -88,10 +97,24 @@ impl RustySmartStitchApp {
                         self.pending_subfolders = Some(remaining_queue);
                     }
 
-                    self.input_paths.sort();
+                    self.input_paths.sort_by(|a, b| {
+                        let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
+                        let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
+                        let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
+                        let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
+
+                        for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
+                            let a_num = a_part.parse::<u32>().unwrap_or(0);
+                            let b_num = b_part.parse::<u32>().unwrap_or(0);
+                            if a_num != b_num {
+                                return a_num.cmp(&b_num);
+                            }
+                        }
+                        a_name.cmp(&b_name)
+                    });
                     return true;
                 } else {
-                    subfolder_vec.remove(0); // Remove current empty folder
+                    subfolder_vec.remove(0);
                     subfolder_vec.extend(inner_subfolders);
                     if subfolder_vec.is_empty() {
                         return false;
@@ -100,11 +123,28 @@ impl RustySmartStitchApp {
             }
             return false;
         } else {
-            self.input_paths.sort();
+            self.input_paths.sort_by(|a, b| {
+                let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
+                let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
+
+                for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
+                    let a_num = a_part.parse::<u32>().unwrap_or(0);
+                    let b_num = b_part.parse::<u32>().unwrap_or(0);
+                    if a_num != b_num {
+                        return a_num.cmp(&b_num);
+                    }
+                }
+                a_name.cmp(&b_name)
+            });
         }
 
         if !subfolder_queue.is_empty() {
-            println!("Storing {} subfolders for later processing", subfolder_queue.len());
+            println!(
+                "Storing {} subfolders for later processing",
+                subfolder_queue.len()
+            );
             self.pending_subfolders = Some(subfolder_queue);
         } else {
             self.pending_subfolders = None;
@@ -118,7 +158,7 @@ impl RustySmartStitchApp {
         if let Some(ref mut queue) = self.pending_subfolders {
             if let Some(subfolder) = queue.pop_front() {
                 println!("Processing subfolder: {:?}", subfolder);
-                
+
                 self.input_paths.clear();
                 let mut has_files = false;
 
@@ -128,7 +168,9 @@ impl RustySmartStitchApp {
                         if path.is_file() {
                             if let Some(ext) = path.extension() {
                                 let ext = ext.to_string_lossy().to_lowercase();
-                                if ["png", "jpg", "jpeg", "webp", "bmp", "psd"].contains(&ext.as_str()) {
+                                if ["png", "jpg", "jpeg", "webp", "bmp", "psd"]
+                                    .contains(&ext.as_str())
+                                {
                                     println!("Adding file: {:?}", path);
                                     self.input_paths.push(path);
                                     has_files = true;
@@ -140,10 +182,25 @@ impl RustySmartStitchApp {
                         }
                     }
                 }
-                self.input_paths.sort();
+                self.input_paths.sort_by(|a, b| {
+                    let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
+                    let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
 
-                // Use the root output directory as base and maintain the subfolder structure
-                if let (Some(root_dir), Some(root_input)) = (&self.root_output_dir, &self.root_input_path) {
+                    for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
+                        let a_num = a_part.parse::<u32>().unwrap_or(0);
+                        let b_num = b_part.parse::<u32>().unwrap_or(0);
+                        if a_num != b_num {
+                            return a_num.cmp(&b_num);
+                        }
+                    }
+                    a_name.cmp(&b_name)
+                });
+
+                if let (Some(root_dir), Some(root_input)) =
+                    (&self.root_output_dir, &self.root_input_path)
+                {
                     if let Ok(rel_path) = subfolder.strip_prefix(root_input) {
                         self.output_dir = Some(root_dir.join(rel_path));
                         println!("Set subfolder output dir to: {:?}", self.output_dir);
@@ -171,7 +228,21 @@ impl RustySmartStitchApp {
         if let Ok(Some(path)) = FileDialog::new().show_open_single_dir() {
             self.add_folder_contents(path.clone());
             self.success_message.clear();
-            self.input_paths.sort();
+            self.input_paths.sort_by(|a, b| {
+                let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
+                let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
+
+                for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
+                    let a_num = a_part.parse::<u32>().unwrap_or(0);
+                    let b_num = b_part.parse::<u32>().unwrap_or(0);
+                    if a_num != b_num {
+                        return a_num.cmp(&b_num);
+                    }
+                }
+                a_name.cmp(&b_name)
+            });
         }
     }
 
@@ -184,7 +255,12 @@ impl RustySmartStitchApp {
                     self.output_format
                 );
                 self.output_dir = Some(grandparent.join(output_dir_name));
-                self.manual_output_dir = self.output_dir.as_ref().unwrap().to_string_lossy().to_string();
+                self.manual_output_dir = self
+                    .output_dir
+                    .as_ref()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string();
             }
         }
     }
@@ -203,8 +279,22 @@ impl RustySmartStitchApp {
         {
             self.input_paths = paths;
             self.success_message.clear();
-            self.input_paths.sort();
-            
+            self.input_paths.sort_by(|a, b| {
+                let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
+                let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
+
+                for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
+                    let a_num = a_part.parse::<u32>().unwrap_or(0);
+                    let b_num = b_part.parse::<u32>().unwrap_or(0);
+                    if a_num != b_num {
+                        return a_num.cmp(&b_num);
+                    }
+                }
+                a_name.cmp(&b_name)
+            });
+
             if let Some(first_path) = self.input_paths.first().cloned() {
                 self.update_output_directory_from_path(&first_path);
             }
@@ -214,10 +304,14 @@ impl RustySmartStitchApp {
     pub fn clear_all(&mut self) {
         self.input_paths.clear();
         self.output_dir = None;
+        self.root_output_dir = None; // Clear root output dir
+        self.root_input_path = None; // Clear root input path
         self.manual_output_dir.clear();
         self.error_message.clear();
         self.success_message.clear();
         self.pending_subfolders = None;
+        self.processed_folder_count = 0; // Reset folder count
+        self.last_output_format = None; // Clear the last used format
     }
 
     pub fn handle_file_drops(&mut self, ctx: &egui::Context) {
@@ -232,7 +326,21 @@ impl RustySmartStitchApp {
                         }
                     }
                 }
-                self.input_paths.sort();
+                self.input_paths.sort_by(|a, b| {
+                    let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
+                    let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
+
+                    for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
+                        let a_num = a_part.parse::<u32>().unwrap_or(0);
+                        let b_num = b_part.parse::<u32>().unwrap_or(0);
+                        if a_num != b_num {
+                            return a_num.cmp(&b_num);
+                        }
+                    }
+                    a_name.cmp(&b_name)
+                });
             }
         });
     }
@@ -250,34 +358,38 @@ impl RustySmartStitchApp {
     pub fn update_output_directory(&mut self, path: &PathBuf) {
         if let Some(parent) = path.parent() {
             let output_dir_name = format!(
-                "{}_{}", 
+                "{}_{}",
                 parent.file_name().unwrap().to_string_lossy(),
                 self.output_format
             );
             self.output_dir = Some(parent.join(output_dir_name));
-            self.manual_output_dir = self.output_dir.as_ref().unwrap().to_string_lossy().to_string();
+            self.manual_output_dir = self
+                .output_dir
+                .as_ref()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
         }
     }
 
     pub fn setup_output_directory(&mut self) {
-        // If we have a root input path, always create a new root output directory with current format
         if let Some(root_input) = &self.root_input_path {
             if let Some(parent) = root_input.parent() {
                 let root_name = root_input.file_name().unwrap_or_default().to_string_lossy();
                 let output_root_name = format!("{}_{}", root_name, self.output_format);
                 self.root_output_dir = Some(parent.join(output_root_name));
-                
-                // Update subfolder path if we have input files
+
                 if let Some(first_path) = self.input_paths.first() {
                     if let Ok(rel_path) = first_path.parent().unwrap().strip_prefix(root_input) {
-                        self.output_dir = Some(self.root_output_dir.as_ref().unwrap().join(rel_path));
+                        self.output_dir =
+                            Some(self.root_output_dir.as_ref().unwrap().join(rel_path));
                     } else {
                         self.output_dir = self.root_output_dir.clone();
                     }
                 } else {
                     self.output_dir = self.root_output_dir.clone();
                 }
-                
+
                 if let Some(root_dir) = &self.root_output_dir {
                     self.manual_output_dir = root_dir.to_string_lossy().to_string();
                 }
@@ -285,27 +397,29 @@ impl RustySmartStitchApp {
             }
         }
 
-        // Fallback: If we don't have a root input path but have some input files
-        if self.output_dir.is_none() {
+        if self.output_dir.is_none()
+            || self.output_format != self.last_output_format.as_deref().unwrap_or("")
+        {
             if let Some(first_path) = self.input_paths.first() {
                 if let Some(parent) = first_path.parent() {
-                    let dir_name = parent.file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy();
-                    let output_dir = parent.with_file_name(format!("{}_{}", dir_name, self.output_format));
+                    let dir_name = parent.file_name().unwrap_or_default().to_string_lossy();
+                    let output_dir =
+                        parent.with_file_name(format!("{}_{}", dir_name, self.output_format));
                     self.output_dir = Some(output_dir.clone());
                     self.manual_output_dir = output_dir.to_string_lossy().to_string();
+                    self.last_output_format = Some(self.output_format.clone());
                     println!("Created new output directory: {:?}", self.output_dir);
                 }
             }
         }
     }
-    // Collects image files from output directory for waifu2x
+
     pub fn collect_image_files(dir: &Path) -> Result<Vec<std::fs::DirEntry>, std::io::Error> {
         Ok(std::fs::read_dir(dir)?
             .filter_map(|e| e.ok())
             .filter(|e| {
-                e.path().extension()
+                e.path()
+                    .extension()
                     .and_then(|ext| ext.to_str())
                     .map(|ext| ext.to_lowercase())
                     .map(|ext| ["jpg", "jpeg", "png", "bmp"].contains(&ext.as_str()))
@@ -313,4 +427,4 @@ impl RustySmartStitchApp {
             })
             .collect())
     }
-} 
+}

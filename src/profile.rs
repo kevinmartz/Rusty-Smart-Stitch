@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
@@ -83,4 +83,4 @@ impl Default for Profile {
             waifu2x_output_depth: "8".to_string(),
         }
     }
-} 
+}

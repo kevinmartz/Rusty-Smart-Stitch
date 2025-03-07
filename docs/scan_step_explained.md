@@ -148,3 +148,7 @@ Solution: Lower scan step for more precise alignment
    - Scan Step: 10+
    - Pro: Very fast processing
    - Con: Might miss good slice points 
+
+## Note on Recent Updates
+
+Please be aware that the `slicelogic` module has undergone significant updates. Ensure that you check the module for any changes that may affect how the scan step is applied during image processing. 
