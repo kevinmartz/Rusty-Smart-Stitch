@@ -11,7 +11,7 @@
   <p>
     A blazingly fast Rust implementation with parallel processing and advanced algorithms.
   </p>
-  <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/releases/tag/">
+  <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/releases">
     <img src="https://img.shields.io/github/v/release/kevinmartz/Rusty-Smart-Stitch">
   </a>
   <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/commits/main">
