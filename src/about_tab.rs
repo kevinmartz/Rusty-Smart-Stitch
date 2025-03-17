@@ -160,7 +160,7 @@ impl RustySmartStitchApp {
                                                 Err(e) => {
                                                     eprintln!("Update failed: {}", e);
                                                     show_info_dialog(
-                                                        "Update failed. Please try again later.",
+                                                        &format!("Update failed: {}", e),
                                                     );
                                                     tx.send(UpdateStatus::Error(()))
                                                         .unwrap_or_default();
@@ -180,7 +180,7 @@ impl RustySmartStitchApp {
                                         Err(e) => {
                                             eprintln!("Download failed: {}", e);
                                             show_info_dialog(
-                                                "Download failed. Please try again later.",
+                                                &format!("Download failed: {}. Please try again later or download manually from GitHub.", e),
                                             );
                                             tx.send(UpdateStatus::Error(())).unwrap_or_default();
                                             let tx_clone = tx.clone();
@@ -205,7 +205,9 @@ impl RustySmartStitchApp {
                             }
                             Err(e) => {
                                 eprintln!("Update check failed: {}", e);
-                                show_info_dialog("Update check failed. Please try again later.");
+                                show_info_dialog(
+                                    &format!("Update check failed: {}. Please check your internet connection and try again later.", e),
+                                );
                                 tx.send(UpdateStatus::Error(())).unwrap_or_default();
                                 let tx_clone = tx.clone();
                                 tokio::spawn(async move {
@@ -298,7 +300,7 @@ impl RustySmartStitchApp {
 
 pub fn confirm_update_dialog(release: &crate::checkupd::ReleaseInfo) -> bool {
     let message = format!(
-        "A new version {} is available!\n\nRelease Notes:\n{}",
+        "A new version {} is available!\n\nRelease Notes:\n{}\n\nIf automatic update fails, you can download it manually from:\nhttps://github.com/kevinmartz/Rusty-Smart-Stitch/releases/latest",
         release.tag_name, release.body
     );
 
