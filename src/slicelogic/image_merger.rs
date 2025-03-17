@@ -6,7 +6,6 @@ use rayon::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::AtomicU32;
 
 pub(crate) fn merge_images_from_memory(
     image_data: &[Either<DynamicImage, PathBuf>],
@@ -65,24 +64,31 @@ pub(crate) fn merge_images_rgba(
         width, height,
     )));
     
-    merged.lock().unwrap().par_chunks_mut(4).for_each(|p| {
-        p.copy_from_slice(&[255, 255, 255, 0]);
-    });
+    // Initialize with transparent background
+    {
+        let mut buffer = merged.lock().unwrap();
+        buffer.par_chunks_mut(4).for_each(|p| {
+            p.copy_from_slice(&[255, 255, 255, 0]);
+        });
+    }
 
-    let y_offset = Arc::new(AtomicU32::new(0));
+    let mut current_offset = 0;
     
-    images.par_iter().for_each(|img| {
+    for img in images {
+        let img_height = img.height();
         let rgba = img.to_rgba8();
-        let current_offset = y_offset.fetch_add(img.height(), Ordering::SeqCst);
         
-        (0..img.height()).into_par_iter().for_each(|y| {
+        // Process each row of the current image
+        (0..img_height).into_par_iter().for_each(|y| {
             let mut buffer = merged.lock().unwrap();
             for x in 0..img.width() {
                 let pixel = rgba.get_pixel(x, y);
                 buffer.put_pixel(x, y + current_offset, *pixel);
             }
         });
-    });
+        
+        current_offset += img_height;
+    }
 
     Ok(DynamicImage::ImageRgba8(
         Arc::try_unwrap(merged).unwrap().into_inner().unwrap(),

@@ -4,8 +4,83 @@ use native_dialog::FileDialog;
 use std::collections::VecDeque;
 use std::path::Path;
 use std::path::PathBuf;
+use std::cmp::Ordering;
+use either::Either;
 
 impl RustySmartStitchApp {
+    // Helper function for natural sorting of filenames you may ask why?
+    // well it's because i'm a bit of a nerd and i like to sort the files in a natural way
+    // so that they are in the order of the numbers in the filenames
+    // if you don't know what natural sorting is, google it
+    // it's a way to sort strings that contain numbers in a way that is more human-readable
+    // for example 1, 2, 10, 20, 100, 200, 1000, 2000, etc.
+    fn natural_sort_paths(a: &PathBuf, b: &PathBuf) -> Ordering {
+        let a_name = a.file_name().unwrap_or_default().to_string_lossy();
+        let b_name = b.file_name().unwrap_or_default().to_string_lossy();
+        
+        let mut a_parts = Vec::new();
+        let mut b_parts = Vec::new();
+        
+        let mut a_num_str = String::new();
+        let mut b_num_str = String::new();
+        
+        // Split a_name into numeric and non-numeric parts
+        for c in a_name.chars() {
+            if c.is_ascii_digit() {
+                a_num_str.push(c);
+            } else {
+                if !a_num_str.is_empty() {
+                    a_parts.push(Either::Left(a_num_str.parse::<u32>().unwrap_or(0)));
+                    a_num_str = String::new();
+                }
+                a_parts.push(Either::Right(c));
+            }
+        }
+        if !a_num_str.is_empty() {
+            a_parts.push(Either::Left(a_num_str.parse::<u32>().unwrap_or(0)));
+        }
+        
+        // Split b_name into numeric and non-numeric parts
+        for c in b_name.chars() {
+            if c.is_ascii_digit() {
+                b_num_str.push(c);
+            } else {
+                if !b_num_str.is_empty() {
+                    b_parts.push(Either::Left(b_num_str.parse::<u32>().unwrap_or(0)));
+                    b_num_str = String::new();
+                }
+                b_parts.push(Either::Right(c));
+            }
+        }
+        if !b_num_str.is_empty() {
+            b_parts.push(Either::Left(b_num_str.parse::<u32>().unwrap_or(0)));
+        }
+        
+        // Compare parts
+        let min_len = a_parts.len().min(b_parts.len());
+        for i in 0..min_len {
+            match (&a_parts[i], &b_parts[i]) {
+                (Either::Left(a_num), Either::Left(b_num)) => {
+                    match a_num.cmp(b_num) {
+                        Ordering::Equal => continue,
+                        other => return other,
+                    }
+                },
+                (Either::Right(a_char), Either::Right(b_char)) => {
+                    match a_char.cmp(b_char) {
+                        Ordering::Equal => continue,
+                        other => return other,
+                    }
+                },
+                (Either::Left(_), Either::Right(_)) => return Ordering::Less,
+                (Either::Right(_), Either::Left(_)) => return Ordering::Greater,
+            }
+        }
+        
+        // If we get here, one is a prefix of the other, or they're equal
+        a_parts.len().cmp(&b_parts.len())
+    }
+
     pub fn add_folder_contents(&mut self, folder_path: PathBuf) -> bool {
         println!("Processing folder: {:?}", folder_path);
 
@@ -51,11 +126,7 @@ impl RustySmartStitchApp {
 
         if self.input_paths.is_empty() && !subfolder_queue.is_empty() {
             let mut subfolder_vec: Vec<_> = subfolder_queue.drain(..).collect();
-            subfolder_vec.sort_by(|a, b| {
-                let a_num = a.file_name().unwrap_or_default().to_string_lossy().parse::<u32>().unwrap_or(0);
-                let b_num = b.file_name().unwrap_or_default().to_string_lossy().parse::<u32>().unwrap_or(0);
-                a_num.cmp(&b_num)
-            });
+            subfolder_vec.sort_by(Self::natural_sort_paths);
 
             while let Some(current_folder) = subfolder_vec.first() {
                 println!("Checking subfolder: {:?}", current_folder);
@@ -97,21 +168,7 @@ impl RustySmartStitchApp {
                         self.pending_subfolders = Some(remaining_queue);
                     }
 
-                    self.input_paths.sort_by(|a, b| {
-                        let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
-                        let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
-                        let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
-                        let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
-
-                        for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
-                            let a_num = a_part.parse::<u32>().unwrap_or(0);
-                            let b_num = b_part.parse::<u32>().unwrap_or(0);
-                            if a_num != b_num {
-                                return a_num.cmp(&b_num);
-                            }
-                        }
-                        a_name.cmp(&b_name)
-                    });
+                    self.input_paths.sort_by(Self::natural_sort_paths);
                     return true;
                 } else {
                     subfolder_vec.remove(0);
@@ -123,21 +180,7 @@ impl RustySmartStitchApp {
             }
             return false;
         } else {
-            self.input_paths.sort_by(|a, b| {
-                let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
-                let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
-                let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
-                let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
-
-                for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
-                    let a_num = a_part.parse::<u32>().unwrap_or(0);
-                    let b_num = b_part.parse::<u32>().unwrap_or(0);
-                    if a_num != b_num {
-                        return a_num.cmp(&b_num);
-                    }
-                }
-                a_name.cmp(&b_name)
-            });
+            self.input_paths.sort_by(Self::natural_sort_paths);
         }
 
         if !subfolder_queue.is_empty() {
@@ -182,21 +225,7 @@ impl RustySmartStitchApp {
                         }
                     }
                 }
-                self.input_paths.sort_by(|a, b| {
-                    let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
-                    let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
-                    let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
-                    let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
-
-                    for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
-                        let a_num = a_part.parse::<u32>().unwrap_or(0);
-                        let b_num = b_part.parse::<u32>().unwrap_or(0);
-                        if a_num != b_num {
-                            return a_num.cmp(&b_num);
-                        }
-                    }
-                    a_name.cmp(&b_name)
-                });
+                self.input_paths.sort_by(Self::natural_sort_paths);
 
                 if let (Some(root_dir), Some(root_input)) =
                     (&self.root_output_dir, &self.root_input_path)
@@ -228,21 +257,7 @@ impl RustySmartStitchApp {
         if let Ok(Some(path)) = FileDialog::new().show_open_single_dir() {
             self.add_folder_contents(path.clone());
             self.success_message.clear();
-            self.input_paths.sort_by(|a, b| {
-                let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
-                let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
-                let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
-                let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
-
-                for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
-                    let a_num = a_part.parse::<u32>().unwrap_or(0);
-                    let b_num = b_part.parse::<u32>().unwrap_or(0);
-                    if a_num != b_num {
-                        return a_num.cmp(&b_num);
-                    }
-                }
-                a_name.cmp(&b_name)
-            });
+            self.input_paths.sort_by(Self::natural_sort_paths);
         }
     }
 
@@ -279,21 +294,7 @@ impl RustySmartStitchApp {
         {
             self.input_paths = paths;
             self.success_message.clear();
-            self.input_paths.sort_by(|a, b| {
-                let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
-                let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
-                let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
-                let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
-
-                for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
-                    let a_num = a_part.parse::<u32>().unwrap_or(0);
-                    let b_num = b_part.parse::<u32>().unwrap_or(0);
-                    if a_num != b_num {
-                        return a_num.cmp(&b_num);
-                    }
-                }
-                a_name.cmp(&b_name)
-            });
+            self.input_paths.sort_by(Self::natural_sort_paths);
 
             if let Some(first_path) = self.input_paths.first().cloned() {
                 self.update_output_directory_from_path(&first_path);
@@ -326,21 +327,7 @@ impl RustySmartStitchApp {
                         }
                     }
                 }
-                self.input_paths.sort_by(|a, b| {
-                    let a_name = a.file_name().unwrap_or_default().to_string_lossy().to_string();
-                    let b_name = b.file_name().unwrap_or_default().to_string_lossy().to_string();
-                    let a_parts: Vec<_> = a_name.split(|c: char| !c.is_numeric()).collect();
-                    let b_parts: Vec<_> = b_name.split(|c: char| !c.is_numeric()).collect();
-
-                    for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
-                        let a_num = a_part.parse::<u32>().unwrap_or(0);
-                        let b_num = b_part.parse::<u32>().unwrap_or(0);
-                        if a_num != b_num {
-                            return a_num.cmp(&b_num);
-                        }
-                    }
-                    a_name.cmp(&b_name)
-                });
+                self.input_paths.sort_by(Self::natural_sort_paths);
             }
         });
     }
