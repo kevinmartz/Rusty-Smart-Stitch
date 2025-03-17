@@ -12,13 +12,13 @@
     A blazingly fast Rust implementation with parallel processing and advanced algorithms.
   </p>
   <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/releases">
-    <img src="https://img.shields.io/github/v/release/kevinmartz/Rusty-Smart-Stitch?style=flat-square">
+    <img src="https://img.shields.io/github/v/release/kevinmartz/Rusty-Smart-Stitch?style=for-the-badge">
   </a>
   <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/commits/main">
-    <img src="https://img.shields.io/github/last-commit/kevinmartz/Rusty-Smart-Stitch?style=flat-square">
+    <img src="https://img.shields.io/github/last-commit/kevinmartz/Rusty-Smart-Stitch?style=for-the-badge">
   </a>
   <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg?style=flat-square">
+    <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg?style=for-the-badge">
   </a>
 </div>
 
