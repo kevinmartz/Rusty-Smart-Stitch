@@ -12,11 +12,11 @@ pub(crate) fn convert_psd_to_dynamic_image(
 ) -> Result<DynamicImage> {
     let psd_data = fs::read(psd_path)?;
     let psd_file = Psd::from_bytes(&psd_data)?;
-    let width = psd_file.width() as u32;
-    let height = psd_file.height() as u32;
+    let width = psd_file.width();
+    let height = psd_file.height();
     
     // Process RGBA data in parallel with optimal chunk size
-    let chunk_size = (width * 4).max(1).min(8192);
+    let chunk_size = (width * 4).clamp(1, 8192);
     let rgba_data: Vec<u8> = psd_file.rgba()
         .par_chunks(chunk_size as usize)
         .flat_map(|chunk| chunk.to_vec())

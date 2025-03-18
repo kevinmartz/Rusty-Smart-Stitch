@@ -31,6 +31,7 @@ pub struct RustySmartStitch {
 }
 
 impl RustySmartStitch {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         input_paths: Vec<PathBuf>,
         output_dir: PathBuf,

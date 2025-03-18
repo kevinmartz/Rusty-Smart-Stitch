@@ -119,7 +119,7 @@ pub(crate) fn merge_images_rgb(
         let current_offset = y_offset.load(Ordering::SeqCst);
 
         let chunk_height = 16.min(img.height()); // Process 16 scanlines at a time eh 16 is fine
-        let num_chunks = (img.height() + chunk_height - 1) / chunk_height;
+        let num_chunks = img.height().div_ceil(chunk_height);
 
         (0..num_chunks).into_par_iter().for_each(move |chunk_idx| {
             let start_y = chunk_idx * chunk_height;

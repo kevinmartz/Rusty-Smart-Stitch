@@ -116,7 +116,7 @@ impl SliceLocation {
         let end_x = width - ignorable;
         
         // Calculate optimal chunk size based on image width
-        let chunk_size = ((end_x - start_x).max(1).min(512)) as usize;
+        let chunk_size = (end_x - start_x).clamp(1, 512) as usize;
         
         (start_x..end_x)
             .into_par_iter()
