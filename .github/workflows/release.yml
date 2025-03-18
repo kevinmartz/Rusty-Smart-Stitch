@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: windows-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    
+    steps:
+      - name: Get version from tag
+        id: get_version
+        run: echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
+        shell: bash
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Rusty Smart Stitch ${{ github.ref_name }}
+          body: |
+            Rusty Smart Stitch version ${{ steps.get_version.outputs.version }}
+            
+            ## Changes in this release
+            
+            Please see the [CHANGELOG.md](https://github.com/kevinmartz/Rusty-Smart-Stitch/blob/main/CHANGELOG.md) for details.
+            
+            ## Installation
+            
+            Download the appropriate package for your platform and extract it to a location of your choice.
+          draft: false
+          prerelease: false
+
+  build-windows:
+    name: Build Windows
+    needs: create-release
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      
+      - name: Build Release
+        run: cargo build --release
+      
+      - name: Create Package
+        run: |
+          mkdir release-package
+          cp target/release/rusty-smart-stitch.exe release-package/
+          cp LICENSE release-package/
+          cp README.md release-package/
+          Compress-Archive -Path release-package/* -DestinationPath rusty-smart-stitch-windows-${{ needs.create-release.outputs.version }}.zip
+        shell: pwsh
+      
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./rusty-smart-stitch-windows-${{ needs.create-release.outputs.version }}.zip
+          asset_name: rusty-smart-stitch-windows-${{ needs.create-release.outputs.version }}.zip
+          asset_content_type: application/zip
+
+  update-readme:
+    name: Update README badge
+    needs: [create-release, build-windows]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Update README
+        run: |
+          sed -i 's|<img src="https://img.shields.io/badge/release-v.*-blue?style=for-the-badge" alt="Latest Release">|<img src="https://img.shields.io/badge/release-v${{ needs.create-release.outputs.version }}-blue?style=for-the-badge" alt="Latest Release">|g' README.md
+          sed -i 's|<img src="https://img.shields.io/badge/last%20commit-.*-green?style=for-the-badge" alt="Last Commit">|<img src="https://img.shields.io/badge/last%20commit-$(date +"%B %Y")-green?style=for-the-badge" alt="Last Commit">|g' README.md
+      
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add README.md
+          git commit -m "Update README badges for v${{ needs.create-release.outputs.version }}" || echo "No changes to commit"
+          git push
