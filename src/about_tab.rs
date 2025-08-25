@@ -88,7 +88,7 @@ impl RustySmartStitchApp {
                                 .size(14.0)
                                 .color(Color32::from_rgb(161, 161, 170)),
                         );
-                        ui.label(RichText::new("1.0.8").size(14.0));
+                        ui.label(RichText::new("1.0.9").size(14.0));
                         ui.end_row();
                     });
             });
