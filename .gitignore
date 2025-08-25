@@ -1,0 +1,6 @@
+/target
+/.vscode
+
+**/*.rs.bk
+**/*.7z
+**/*.zip

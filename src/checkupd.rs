@@ -224,7 +224,6 @@ impl Updater {
     // which file to download based on OS
     fn get_platform_asset(&self, release: &ReleaseInfo) -> Option<ReleaseAsset> {
         if cfg!(target_os = "windows") {
-            // Try multiple possible Windows asset naming patterns
             let patterns = ["windows.exe", "win.exe", "win64.exe", "win32.exe", "windows-x64.exe", "windows-x86.exe", ".exe"];
             
             for pattern in patterns {
@@ -233,7 +232,6 @@ impl Updater {
                 }
             }
             
-            // If no specific pattern matches, try to find any .exe file
             if let Some(asset) = release.assets.iter().find(|asset| asset.name.to_lowercase().ends_with(".exe")) {
                 return Some(asset.clone());
             }
@@ -264,7 +262,6 @@ impl Updater {
         }
     }
 
-    // Installs that new version based on OS
     pub async fn apply_update(&self, new_binary_path: PathBuf) -> Result<()> {
         #[cfg(target_os = "windows")]
         {
@@ -287,7 +284,6 @@ impl Updater {
     fn apply_update_windows(&self, new_binary_path: PathBuf) -> Result<()> {
         use std::process::Command;
 
-        // makes a batch script to do the dirty work
         let batch_script = self.temp_dir.join("update.bat");
         let script_content = format!(
             "@echo off\n\
@@ -302,10 +298,9 @@ impl Updater {
 
         fs::write(&batch_script, script_content).context("Failed to create update script")?;
 
-        // runs the script without showing a window
         Command::new("cmd")
             .args(["/C", batch_script.to_str().unwrap()])
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW flag
+            .creation_flags(0x08000000)
             .spawn()
             .context("Failed to execute update script")?;
 
@@ -321,7 +316,6 @@ impl Updater {
     fn apply_update_linux(&self, new_binary_path: PathBuf) -> Result<()> {
         use std::process::Command;
 
-        // makes a shell script to do the dirty work
         let shell_script = self.temp_dir.join("update.sh");
         let script_content = format!(
             "#!/bin/bash\n\

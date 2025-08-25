@@ -72,27 +72,87 @@ pub(crate) fn merge_images_rgba(
         });
     }
 
-    let mut current_offset = 0;
-    
+    let current_offset = Arc::new(AtomicUsize::new(0));
+
     for img in images {
         let img_height = img.height();
+        let img_width = img.width();
         let rgba = img.to_rgba8();
+
+        let start_y = current_offset.load(Ordering::SeqCst);
+        let end_y = start_y + img_height as usize;
+        let stride = width as usize * 4;
+
+        let mut buffer_guard = merged.lock().unwrap();
         
-        // Process each row of the current image
-        (0..img_height).into_par_iter().for_each(|y| {
-            let mut buffer = merged.lock().unwrap();
-            for x in 0..img.width() {
-                let pixel = rgba.get_pixel(x, y);
-                buffer.put_pixel(x, y + current_offset, *pixel);
-            }
-        });
+        let buffer_len = buffer_guard.len();
+        let slice_start = start_y * stride;
+        let slice_end = end_y * stride;
+
+        if slice_end > buffer_len {
+            return Err(anyhow::anyhow!("Calculated merge slice exceeds buffer bounds."));
+        }
         
-        current_offset += img_height;
+        let target_rows_slice: &mut [u8] = &mut buffer_guard.as_mut()[slice_start..slice_end];
+
+        let num_rows_to_process = img_height as usize;
+        let rows_per_chunk = (num_rows_to_process + rayon::current_num_threads() - 1) / rayon::current_num_threads();
+        let chunk_size_bytes = rows_per_chunk * stride;
+
+        target_rows_slice
+            .par_chunks_mut(chunk_size_bytes.max(stride))
+            .enumerate()
+            .for_each(|(chunk_idx, chunk_slice)| {
+                let chunk_start_row_in_img = chunk_idx * rows_per_chunk;
+                let num_rows_in_chunk = chunk_slice.len() / stride;
+
+                for y_in_chunk in 0..num_rows_in_chunk {
+                    let y = (chunk_start_row_in_img + y_in_chunk) as u32;
+                    if y < img_height {
+                        let target_row_start_in_chunk_slice = y_in_chunk * stride;
+                        let target_row_end_in_chunk_slice = target_row_start_in_chunk_slice + stride;
+                        let target_row_slice = &mut chunk_slice[target_row_start_in_chunk_slice..target_row_end_in_chunk_slice];
+
+                        if img_width == width {
+                            let rgba_stride = img_width as usize * 4;
+                            let source_row_slice = &rgba.as_raw()[y as usize * rgba_stride .. (y + 1) as usize * rgba_stride];
+                            if target_row_slice.len() == stride { 
+                                target_row_slice.copy_from_slice(source_row_slice);
+                            } else {
+                                for x in 0..img_width {
+                                    let pixel = rgba.get_pixel(x, y);
+                                    let target_idx = x as usize * 4;
+                                    target_row_slice[target_idx..target_idx+4].copy_from_slice(&pixel.0);
+                                }
+                            }
+                        } else {
+                            for x in 0..img_width {
+                                let pixel = rgba.get_pixel(x, y);
+                                let target_idx = x as usize * 4;
+                                if target_idx + 4 <= target_row_slice.len() { 
+                                    target_row_slice[target_idx..target_idx+4].copy_from_slice(&pixel.0);
+                                }
+                            }
+                            for x in img_width..width {
+                                let target_idx = x as usize * 4;
+                                if target_idx + 4 <= target_row_slice.len() {
+                                    target_row_slice[target_idx..target_idx+4].copy_from_slice(&[255, 255, 255, 0]);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+        drop(buffer_guard);
+        
+        current_offset.fetch_add(img_height as usize, Ordering::SeqCst);
     }
 
-    Ok(DynamicImage::ImageRgba8(
-        Arc::try_unwrap(merged).unwrap().into_inner().unwrap(),
-    ))
+    match Arc::try_unwrap(merged) {
+        Ok(mutex) => Ok(DynamicImage::ImageRgba8(mutex.into_inner().unwrap())),
+        Err(_) => Err(anyhow::anyhow!("Failed to unwrap Arc/Mutex for merged image")),
+    }
 }
 
 pub(crate) fn merge_images_rgb(

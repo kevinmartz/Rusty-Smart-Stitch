@@ -241,7 +241,6 @@ impl RustySmartStitchApp {
 
     // Check if any of that advanced shit is turned on
     pub fn has_active_advanced_settings(&self) -> bool {
-        // Return true if any advanced setting is enabled and configured
         (self.custom_width_enabled && !self.custom_width.is_empty())
             || (self.upscale_enabled && self.upscale_factor > 1)
             || (self.resize_enabled

@@ -5,15 +5,15 @@ use std::path::PathBuf;
 
 use crate::RustySmartStitchApp;
 
-const PADDING: f32 = 32.0; // Space around stuff
-const SPACING: f32 = 10.0; // Space between things
-const BUTTON_HEIGHT: f32 = 35.0; // Buttons thicc enough to click
-const DRAG_AREA_HEIGHT: f32 = 200.0; // Big enough to drop files in
-const HEADING_SIZE: f32 = 20.0; // Main title
-const SUBHEADING_SIZE: f32 = 18.0; // Section titles
-const NORMAL_TEXT_SIZE: f32 = 16.0; // Regular text
-const SMALL_TEXT_SIZE: f32 = 12.0; // Tiny text
-const TABLE_HEIGHT: f32 = 130.0; // File list height
+const PADDING: f32 = 32.0;
+const SPACING: f32 = 10.0;
+const BUTTON_HEIGHT: f32 = 35.0;
+const DRAG_AREA_HEIGHT: f32 = 200.0;
+const HEADING_SIZE: f32 = 20.0;
+const SUBHEADING_SIZE: f32 = 18.0;
+const NORMAL_TEXT_SIZE: f32 = 16.0;
+const SMALL_TEXT_SIZE: f32 = 12.0;
+const TABLE_HEIGHT: f32 = 130.0;
 
 const SUPPORTED_FORMATS: [(&str, &str); 4] = [
     ("jpg", "JPG"),
@@ -22,11 +22,8 @@ const SUPPORTED_FORMATS: [(&str, &str); 4] = [
     ("bmp", "BMP"),
 ];
 
-// File types it can process
 const SUPPORTED_EXTENSIONS: [&str; 6] = ["png", "jpg", "jpeg", "webp", "bmp", "psd"];
 
-// Load an image from bytes so we dont have to redner it everytime
-// Used for the drag n drop icon
 fn load_image_from_memory(image_data: &[u8]) -> Result<egui::ColorImage, image::ImageError> {
     let image = image::load_from_memory(image_data)?;
     let size = [image.width() as _, image.height() as _];
@@ -59,7 +56,6 @@ impl RustySmartStitchApp {
         });
     }
 
-    // Load the drag n drop icon - only do it once and thanks to that guy in github for the stolen code hehe
     fn initialize_drag_icon(&mut self, ctx: &egui::Context) {
         if self.drag_icon.is_none() {
             let icon_data = include_bytes!("../assets/drag.ico");
@@ -70,7 +66,6 @@ impl RustySmartStitchApp {
         }
     }
 
-    // Show the app title - keep it simple if you dont like it remove the .family(egui::FontFamily::Name("PixelFont".into())) or change the font from the main.rs
     fn show_header(&mut self, ui: &mut Ui) {
         ui.vertical_centered(|ui| {
             ui.add_space(SPACING * 2.0);
@@ -84,8 +79,6 @@ impl RustySmartStitchApp {
         });
     }
 
-    // The big area for drop files
-    // Shows progress when processing check the proccess_handler.rs for the actual processing and the progress bar dont change anything here
     fn show_drag_drop_area(&mut self, ui: &mut Ui, panel_width: f32, ctx: &egui::Context) {
         ui.with_layout(
             egui::Layout::top_down_justified(egui::Align::Center),
@@ -96,8 +89,8 @@ impl RustySmartStitchApp {
                     ui.set_max_height(DRAG_AREA_HEIGHT);
 
                     let rect = ui.max_rect();
-                    let base_fill = Color32::from_gray(20); // Dark background
-                    let mut stroke = Stroke::new(1.0, Color32::from_gray(100)); // Gray border
+                    let base_fill = Color32::from_gray(20);
+                    let mut stroke = Stroke::new(1.0, Color32::from_gray(100));
 
                     if self.processing || !self.success_message.is_empty() {
                         self.draw_progress_area(ui, rect, DRAG_AREA_HEIGHT);
@@ -109,8 +102,6 @@ impl RustySmartStitchApp {
         );
     }
 
-    // Handle the drag n drop UI state
-    // Changes color when dragging files over
     fn handle_drag_drop_ui(
         &mut self,
         ui: &mut Ui,
@@ -123,7 +114,7 @@ impl RustySmartStitchApp {
         self.drag_hovering = is_hovering;
 
         if self.drag_hovering {
-            *stroke = Stroke::new(2.0, Color32::from_rgb(69, 133, 136)); // Highlight when hovering
+            *stroke = Stroke::new(2.0, Color32::from_rgb(69, 133, 136));
             ctx.request_repaint();
         }
 
@@ -275,7 +266,7 @@ impl RustySmartStitchApp {
                                     ui.painter().rect_filled(
                                         label.rect,
                                         0.0,
-                                        Color32::from_rgb(0, 60, 120),
+                                        Color32::from_rgba_premultiplied(60, 120, 180, 100),
                                     );
                                 }
                             });
@@ -327,7 +318,7 @@ impl RustySmartStitchApp {
                                             ui.painter().rect_filled(
                                                 label.rect,
                                                 0.0,
-                                                Color32::from_rgb(0, 60, 120),
+                                                Color32::from_rgba_premultiplied(60, 120, 180, 100),
                                             );
                                         }
                                     });
@@ -419,7 +410,6 @@ impl RustySmartStitchApp {
         }
     }
 
-    // Text box showing where we're saving to, if you want to show it all the time remove the if self.output_dir.is_some()
     fn show_output_directory_input(&mut self, ui: &mut Ui, panel_width: f32) {
         if self.output_dir.is_some() {
             ui.add_space(5.0);

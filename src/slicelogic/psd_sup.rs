@@ -15,7 +15,7 @@ pub(crate) fn convert_psd_to_dynamic_image(
     let width = psd_file.width();
     let height = psd_file.height();
     
-    // Process RGBA data in parallel with optimal chunk size
+    
     let chunk_size = (width * 4).clamp(1, 8192);
     let rgba_data: Vec<u8> = psd_file.rgba()
         .par_chunks(chunk_size as usize)

@@ -8,12 +8,6 @@ use std::cmp::Ordering;
 use either::Either;
 
 impl RustySmartStitchApp {
-    // Helper function for natural sorting of filenames you may ask why?
-    // well it's because i'm a bit of a nerd and i like to sort the files in a natural way
-    // so that they are in the order of the numbers in the filenames
-    // if you don't know what natural sorting is, google it
-    // it's a way to sort strings that contain numbers in a way that is more human-readable
-    // for example 1, 2, 10, 20, 100, 200, 1000, 2000, etc.
     fn natural_sort_paths(a: &PathBuf, b: &PathBuf) -> Ordering {
         let a_name = a.file_name().unwrap_or_default().to_string_lossy();
         let b_name = b.file_name().unwrap_or_default().to_string_lossy();
@@ -24,7 +18,6 @@ impl RustySmartStitchApp {
         let mut a_num_str = String::new();
         let mut b_num_str = String::new();
         
-        // Split a_name into numeric and non-numeric parts
         for c in a_name.chars() {
             if c.is_ascii_digit() {
                 a_num_str.push(c);
@@ -40,7 +33,6 @@ impl RustySmartStitchApp {
             a_parts.push(Either::Left(a_num_str.parse::<u32>().unwrap_or(0)));
         }
         
-        // Split b_name into numeric and non-numeric parts
         for c in b_name.chars() {
             if c.is_ascii_digit() {
                 b_num_str.push(c);
@@ -56,7 +48,6 @@ impl RustySmartStitchApp {
             b_parts.push(Either::Left(b_num_str.parse::<u32>().unwrap_or(0)));
         }
         
-        // Compare parts
         let min_len = a_parts.len().min(b_parts.len());
         for i in 0..min_len {
             match (&a_parts[i], &b_parts[i]) {
@@ -77,7 +68,6 @@ impl RustySmartStitchApp {
             }
         }
         
-        // If we get here, one is a prefix of the other, or they're equal
         a_parts.len().cmp(&b_parts.len())
     }
 
@@ -305,14 +295,14 @@ impl RustySmartStitchApp {
     pub fn clear_all(&mut self) {
         self.input_paths.clear();
         self.output_dir = None;
-        self.root_output_dir = None; // Clear root output dir
-        self.root_input_path = None; // Clear root input path
+        self.root_output_dir = None;
+        self.root_input_path = None;
         self.manual_output_dir.clear();
         self.error_message.clear();
         self.success_message.clear();
         self.pending_subfolders = None;
-        self.processed_folder_count = 0; // Reset folder count
-        self.last_output_format = None; // Clear the last used format
+        self.processed_folder_count = 0;
+        self.last_output_format = None;
     }
 
     pub fn handle_file_drops(&mut self, ctx: &egui::Context) {

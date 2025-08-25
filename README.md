@@ -11,14 +11,14 @@
   <p>
     A blazingly fast Rust implementation with parallel processing and advanced algorithms.
   </p>
-  <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/releases">
-    <img src="https://img.shields.io/badge/release-v1.0.8-blue?style=for-the-badge" alt="Latest Release">
+  <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/releases/latest">
+    <img src="https://img.shields.io/github/v/release/kevinmartz/Rusty-Smart-Stitch">
   </a>
   <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/commits/main">
-    <img src="https://img.shields.io/badge/last%20commit-March%202025-green?style=for-the-badge" alt="Last Commit">
+    <img src="https://img.shields.io/github/last-commit/kevinmartz/Rusty-Smart-Stitch">
   </a>
   <a href="https://github.com/kevinmartz/Rusty-Smart-Stitch/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge" alt="License">
+    <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg">
   </a>
 </div>
 
@@ -152,9 +152,10 @@ Scan Step:   [████████] 8+
 - 🐛 [Report bugs](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?template=bug_report.md)
 - 💡 [Request features](https://github.com/kevinmartz/Rusty-Smart-Stitch/issues/new?template=feature_request.md)
 - 📖 Check [documentation](docs/) for guides and explanations
+- ❓ Ask questions in [GitHub Discussions](https://github.com/kevinmartz/Rusty-Smart-Stitch/discussions)
 
 ### Contributing
-Contributions! Please see [Contributing Guidelines](docs/CONTRIBUTING.md) for details on:
+We welcome contributions! Please see our [Contributing Guidelines](docs/CONTRIBUTING.md) for details on:
 - 🤝 Code of Conduct
 - 🔧 Development setup
 - 📝 Coding standards
@@ -162,7 +163,7 @@ Contributions! Please see [Contributing Guidelines](docs/CONTRIBUTING.md) for de
 - 📋 Issue reporting
 
 ## TODO (in no particular order)
-- ✅ Enhance the logic (kinda)
+- ✅ Enhance the logic
 - [ ] Add a way to add a custom watermark
 - [ ] other upscalers other than waifu2x (like chainner)
 - [ ] enhacning my own upscaler

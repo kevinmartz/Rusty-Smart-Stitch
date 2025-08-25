@@ -18,4 +18,4 @@ pub(crate) const CHUNK_SIZE: usize = 256;
 // src/slicelogic/slice_location.rs:
 // It is used to calculate an optimal chunk size based on the image width when checking rows for slices.
 // src/slicelogic/processor.rs:
-// through the image_merger module, which uses it in the merge_images_from_memory function.
+// i forgot tbh and too lazy to check.

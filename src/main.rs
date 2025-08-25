@@ -45,13 +45,12 @@ enum UpdateStatus {
 }
 
 struct RustySmartStitchApp {
-    // Basic file handling
     input_paths: Vec<PathBuf>,
     output_dir: Option<PathBuf>,
     manual_output_dir: String,
     root_input_path: Option<PathBuf>,
     root_output_dir: Option<PathBuf>,
-    last_output_format: Option<String>, // Track the last used output format
+    last_output_format: Option<String>,
 
     // Main settings
     rough_output_height: String,
@@ -72,11 +71,9 @@ struct RustySmartStitchApp {
     last_update: Option<Instant>,
     processed_folder_count: usize,
 
-    // UI stuff
     drag_hovering: bool,
     current_tab: Tab,
 
-    // Advanced settings
     custom_width_enabled: bool,
     custom_width: String,
     upscale_enabled: bool,
@@ -85,18 +82,15 @@ struct RustySmartStitchApp {
     resize_width: String,
     resize_height: String,
 
-    // Update checker stuff
     checking_updates: bool,
     update_status_rx: Option<Receiver<UpdateStatus>>,
     current_update_status: Option<UpdateStatus>,
 
-    // UI elements
     drag_icon: Option<egui::TextureHandle>,
     current_progress_message: String,
     last_message_update: Option<Instant>,
     message_transition: f32,
 
-    // Waifu2x settings (yeah there's a lot)
     waifu2x_tta: bool,
     waifu2x_gpu: String,
     waifu2x_batch_size: String,
@@ -117,7 +111,6 @@ struct RustySmartStitchApp {
     waifu2x_model: String,
     waifu2x_split_mode: String,
 
-    // Random stuff
     random_message: String,
     profiles: Vec<(String, Profile)>,
     current_profile_name: String,
@@ -137,7 +130,6 @@ impl Default for RustySmartStitchApp {
                 String::new()
             };
 
-        // defaults
         let mut app = Self {
             input_paths: Vec::new(),
             output_dir: None,
@@ -162,7 +154,7 @@ impl Default for RustySmartStitchApp {
             last_update: None,
             processed_folder_count: 0,
             drag_hovering: false,
-            current_tab: Tab::Main, // Start in the main tab, duh
+            current_tab: Tab::Main,
             custom_width_enabled: false,
             custom_width: "0".to_string(),
             upscale_enabled: false,
@@ -177,7 +169,6 @@ impl Default for RustySmartStitchApp {
             current_progress_message: String::new(),
             last_message_update: None,
             message_transition: 1.0,
-            // All the waifu2x defaults - mostly stolen from the original app
             waifu2x_tta: false,
             waifu2x_gpu: "0".to_string(),
             waifu2x_batch_size: "1".to_string(),
@@ -203,7 +194,6 @@ impl Default for RustySmartStitchApp {
             pending_subfolders: None,
         };
 
-        // Try to load any saved profiles
         let _ = app.load_profiles();
 
         app
@@ -211,7 +201,6 @@ impl Default for RustySmartStitchApp {
 }
 
 impl RustySmartStitchApp {
-    // Profile management stuff
     fn create_profile(&mut self, name: String) {
         if let Some(index) = self.profiles.iter().position(|(n, _)| n == &name) {
             let profile = Profile {
@@ -245,7 +234,6 @@ impl RustySmartStitchApp {
             self.profiles[index] = (name.clone(), profile);
             self.profile_message = format!("Updated profile: {}", name);
         } else {
-            // Make a new profile with current settings
             let profile = Profile {
                 rough_output_height: self.rough_output_height.clone(),
                 sensitivity: self.sensitivity.clone(),
@@ -279,17 +267,14 @@ impl RustySmartStitchApp {
         }
     }
 
-    // Load settings from a profile
     fn load_profile(&mut self, name: &str) {
         if let Some((_, profile)) = self.profiles.iter().find(|(n, _)| n == name) {
-            // Copy all the settings over
             self.rough_output_height = profile.rough_output_height.clone();
             self.sensitivity = profile.sensitivity.clone();
             self.scan_step = profile.scan_step.clone();
             self.output_format = profile.output_format.clone();
             self.output_quality = profile.output_quality.clone();
 
-            // Advanced stuff too
             self.custom_width_enabled = profile.custom_width_enabled;
             self.custom_width = profile.custom_width.clone();
             self.upscale_enabled = profile.upscale_enabled;
@@ -298,7 +283,6 @@ impl RustySmartStitchApp {
             self.resize_width = profile.resize_width.clone();
             self.resize_height = profile.resize_height.clone();
 
-            // And all the waifu2x settings
             self.waifu2x_enabled = profile.waifu2x_enabled;
             self.waifu2x_mode = profile.waifu2x_mode.clone();
             self.waifu2x_noise_level = profile.waifu2x_noise_level.clone();
@@ -315,7 +299,6 @@ impl RustySmartStitchApp {
         }
     }
 
-    // Save profiles to local
     fn save_profiles(&self) -> Result<(), anyhow::Error> {
         if let Some(config_dir) = dirs::config_dir() {
             let config_dir = config_dir.join("rusty_smart_stitch");
@@ -327,7 +310,6 @@ impl RustySmartStitchApp {
         Ok(())
     }
 
-    // Load profiles from local
     fn load_profiles(&mut self) -> Result<(), anyhow::Error> {
         if let Some(config_dir) = dirs::config_dir() {
             let profiles_file = config_dir.join("rusty_smart_stitch").join("profiles.json");
@@ -339,7 +321,6 @@ impl RustySmartStitchApp {
         Ok(())
     }
 
-    // Export a profile to a file so you can share it
     fn export_profile(&self, name: &str) -> Result<(), anyhow::Error> {
         if let Some((_, profile)) = self.profiles.iter().find(|(n, _)| n == name) {
             let filename = format!("{}.json", name);
@@ -354,7 +335,6 @@ impl RustySmartStitchApp {
         Ok(())
     }
 
-    // Import a profile from a file
     fn import_profile(&mut self) -> Result<(), anyhow::Error> {
         let file_dialog = native_dialog::FileDialog::new().add_filter("JSON Profile", &["json"]);
 
@@ -374,27 +354,25 @@ impl RustySmartStitchApp {
 
 #[tokio::main]
 async fn main() -> Result<(), eframe::Error> {
-    // Load icon
     let icon = include_bytes!("../assets/icon.png");
     let icon = load_icon(icon);
 
     let mut options = eframe::NativeOptions::default();
     options.viewport = ViewportBuilder::default()
-        .with_inner_size([484.0, 725.0]) // Perfect size
-        .with_min_inner_size([484.0, 720.0]) // Don't let it get smaller
-        .with_max_inner_size([484.0, 720.0]) // Or bigger
-        .with_resizable(false) // Seriously, don't resize it
-        .with_maximized(false) // Or maximize it
-        .with_maximize_button(false) // Or even try to maximize it
-        .with_transparent(false) // No transparency
-        .with_decorations(true) // Keep the window border
-        .with_icon(icon); // cool icon
+        .with_inner_size([484.0, 725.0])
+        .with_min_inner_size([484.0, 720.0])
+        .with_max_inner_size([484.0, 720.0])
+        .with_resizable(false)
+        .with_maximized(false)
+        .with_maximize_button(false)
+        .with_transparent(false)
+        .with_decorations(true)
+        .with_icon(icon);
 
     eframe::run_native(
         "Rusty Smart Stitch",
         options,
         Box::new(|cc| {
-            // Set up fonts
             let mut fonts = egui::FontDefinitions::default();
 
             fonts.font_data.insert(
@@ -402,7 +380,6 @@ async fn main() -> Result<(), eframe::Error> {
                 egui::FontData::from_static(include_bytes!("../assets/Broken-Console-Bold.ttf")),
             );
 
-            // emojis for folder icons and stuff
             fonts.font_data.insert(
                 "emoji-font".to_owned(),
                 egui::FontData::from_static(include_bytes!("../assets/NotoEmoji-Regular.ttf")),

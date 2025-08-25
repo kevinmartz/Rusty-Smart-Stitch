@@ -14,8 +14,8 @@ impl RustySmartStitchApp {
 
     fn card_frame() -> Frame {
         Frame::none()
-            .fill(Color32::from_rgb(39, 39, 42)) // zinc-800
-            .stroke(Stroke::new(1.0, Color32::from_rgb(63, 63, 70))) // zinc-700
+            .fill(Color32::from_rgb(39, 39, 42))
+            .stroke(Stroke::new(1.0, Color32::from_rgb(63, 63, 70)))
             .rounding(Rounding::same(6.0))
             .outer_margin(8.0)
             .inner_margin(8.0)
@@ -23,7 +23,7 @@ impl RustySmartStitchApp {
 
     fn card_header_frame() -> Frame {
         Frame::none()
-            .fill(Color32::from_rgba_premultiplied(39, 39, 42, 200)) // zinc-700/50
+            .fill(Color32::from_rgba_premultiplied(39, 39, 42, 200))
             .rounding(Rounding::same(6.0))
             .outer_margin(4.0)
             .inner_margin(8.0)
@@ -41,7 +41,7 @@ impl RustySmartStitchApp {
             ui.label(
                 RichText::new("A smart stitch made in Rust for efficient and reliable stitching")
                     .size(14.0)
-                    .color(Color32::from_rgb(161, 161, 170)), // zinc-400
+                    .color(Color32::from_rgb(161, 161, 170)),
             );
             ui.add_space(12.0);
 

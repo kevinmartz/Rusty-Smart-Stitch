@@ -5,7 +5,6 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
-    // Main settings
     pub rough_output_height: String,
     pub sensitivity: String,
     pub scan_step: String,
@@ -13,7 +12,6 @@ pub struct Profile {
     pub output_format: String,
     pub output_quality: String,
 
-    // Advanced settings
     pub custom_width_enabled: bool,
     pub custom_width: String,
     pub upscale_enabled: bool,
@@ -22,7 +20,6 @@ pub struct Profile {
     pub resize_width: String,
     pub resize_height: String,
 
-    // Waifu2x settings
     pub waifu2x_enabled: bool,
     pub waifu2x_mode: String,
     pub waifu2x_noise_level: String,

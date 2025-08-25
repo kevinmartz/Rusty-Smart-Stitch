@@ -3,7 +3,6 @@ use eframe::egui::{self, Align, Color32, Layout, RichText, Ui, Vec2};
 use std::path::Path;
 
 impl RustySmartStitchApp {
-    // Save that exe path for next time
     fn save_waifu2x_path(&self) {
         if let Some(config_dir) = dirs::config_dir() {
             let config_dir = config_dir.join("rusty_smart_stitch");
@@ -281,7 +280,6 @@ impl RustySmartStitchApp {
             ui.add_space(20.0);
             self.show_process_mode(ui);
             ui.add_space(20.0);
-            // Which GPU to use
             ui.vertical(|ui| {
                 ui.label(RichText::new("GPU Device:").size(14.0));
                 ui.add_sized(

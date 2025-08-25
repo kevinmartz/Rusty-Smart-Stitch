@@ -1,4 +1,4 @@
-use image::{DynamicImage, GrayImage};
+use image::{DynamicImage, GenericImageView, Pixel};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -32,21 +32,20 @@ impl SliceLocation {
     }
 
     pub fn run(&self, combined_img: &DynamicImage, split_height: u32) -> Vec<u32> {
-        let gray_img = combined_img.to_luma8();
         let threshold = {
             let mut cache = self.threshold_cache.write().unwrap();
             *cache.entry(self.sensitivity).or_insert_with(|| {
                 ((255.0 * (1.0 - (self.sensitivity as f32 / 100.0))) as u32) as u8
             })
         };
-        let last_row = gray_img.height();
+        let last_row = combined_img.height();
 
-        self.find_slice_locations(&gray_img, split_height, last_row, threshold)
+        self.find_slice_locations(combined_img, split_height, last_row, threshold)
     }
 
     fn find_slice_locations(
         &self,
-        gray_img: &GrayImage,
+        img: &DynamicImage,
         target_height: u32,
         last_row: u32,
         threshold: u8,
@@ -58,7 +57,7 @@ impl SliceLocation {
         while row < last_row {
             let can_slice = if row - slice_locations[slice_locations.len() - 1] > target_height / 2
             {
-                self.check_row_for_slice(gray_img, row, threshold)
+                self.check_row_for_slice(img, row, threshold)
             } else {
                 false
             };
@@ -67,7 +66,7 @@ impl SliceLocation {
                 let slice_height = row - slice_locations[slice_locations.len() - 1];
                 if slice_height > (target_height as f32 * 1.5) as u32 {
                     if let Some(better_row) = self.find_better_slice_point(
-                        gray_img,
+                        img,
                         slice_locations[slice_locations.len() - 1],
                         row,
                         target_height,
@@ -109,13 +108,13 @@ impl SliceLocation {
         slice_locations
     }
 
-    fn check_row_for_slice(&self, gray_img: &GrayImage, row: u32, threshold: u8) -> bool {
-        let width = gray_img.width();
+    fn check_row_for_slice(&self, img: &DynamicImage, row: u32, threshold: u8) -> bool {
+        let width = img.width();
         let ignorable = self.edges as u32;
         let start_x = ignorable + 1;
         let end_x = width - ignorable;
         
-        // Calculate optimal chunk size based on image width
+        
         let chunk_size = (end_x - start_x).clamp(1, 512) as usize;
         
         (start_x..end_x)
@@ -123,16 +122,16 @@ impl SliceLocation {
             .chunks(chunk_size)
             .all(|chunk| {
                 chunk.iter().all(|&x| {
-                    let prev_pixel = gray_img.get_pixel(x, row).0[0];
-                    let next_pixel = gray_img.get_pixel(x + 1, row).0[0];
-                    (prev_pixel <= 9 && next_pixel <= 9) || next_pixel.abs_diff(prev_pixel) <= threshold
+                    let prev_pixel_luma = img.get_pixel(x, row).to_luma().0[0];
+                    let next_pixel_luma = img.get_pixel(x + 1, row).to_luma().0[0];
+                    (prev_pixel_luma <= 9 && next_pixel_luma <= 9) || next_pixel_luma.abs_diff(prev_pixel_luma) <= threshold
                 })
             })
     }
 
     fn find_better_slice_point(
         &self,
-        gray_img: &GrayImage,
+        img: &DynamicImage,
         start_row: u32,
         end_row: u32,
         target_height: u32,
@@ -145,7 +144,7 @@ impl SliceLocation {
             .into_par_iter()
             .step_by(self.scan_step as usize)
             .find_map_first(|row| {
-                if self.check_row_for_slice(gray_img, row, threshold) {
+                if self.check_row_for_slice(img, row, threshold) {
                     let height_diff =
                         ((row as i32) - (start_row as i32 + target_height as i32)).abs();
                     Some((height_diff, row))

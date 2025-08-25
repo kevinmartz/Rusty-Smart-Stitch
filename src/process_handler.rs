@@ -11,7 +11,6 @@ use crate::{ProcessStatus, RustySmartStitch, RustySmartStitchApp};
 use eframe::egui::{self, Color32, Rect, RichText, Rounding, Stroke, Vec2};
 use rusty_smart_stitch::waifu2x::Waifu2xConfig;
 
-// Shit for making the UI look good, but srs this is UI constants basicly you want to change these or comment them and use your own hardcoded values.
 const PROGRESS_BAR_COLOR: Color32 = Color32::from_rgb(14, 138, 199);
 const BACKGROUND_COLOR: Color32 = Color32::from_gray(20);
 const BORDER_STROKE: f32 = 1.0;
@@ -259,8 +258,6 @@ impl RustySmartStitchApp {
         Ok(())
     }
 
-    // the acutal waifu2x command builder but it uses waifu2x.rs as a base
-    // Sets up the waifu2x command with all its options
     fn build_waifu2x_command(
         input_path: &Path,
         config: &Waifu2xConfig,
@@ -281,7 +278,6 @@ impl RustySmartStitchApp {
             cmd.arg("--model_dir").arg(model_dir);
         }
 
-        // Quality and paths. quality will be set to the output quality from the UI
         cmd.arg("-q").arg(output_quality);
         cmd.arg("-i").arg(input_path);
 
@@ -310,7 +306,6 @@ impl RustySmartStitchApp {
         } else if let Some(crop_size) = config.crop_size {
             cmd.arg("-c").arg(crop_size.to_string());
         }
-        // handle output depth, this is only meant to use if you set the output format to png. but it should help with jpgs too kinda?
         if let Some(depth) = config.output_depth {
             if depth != 8 {
                 cmd.arg("-d").arg(depth.to_string());
@@ -337,7 +332,6 @@ impl RustySmartStitchApp {
         }
     }
 
-    // run the waifu2x command
     fn run_waifu2x_command(
         mut cmd: Command,
         input_path: &Path,
@@ -353,7 +347,6 @@ impl RustySmartStitchApp {
                 .unwrap_or_default()
         ));
 
-        // Hide terminal window on Windows only
         #[cfg(target_os = "windows")]
         cmd.creation_flags(0x08000000);
 
@@ -611,7 +604,6 @@ impl RustySmartStitchApp {
 
         config.mode = Some(self.waifu2x_mode.clone());
 
-        // Uses the main output format
         config.output_extension = Some(self.output_format.clone());
 
         config
