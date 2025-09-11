@@ -146,7 +146,7 @@ impl RustySmartStitchApp {
     }
 
     fn create_rusty_smart_stitch(&self) -> RustySmartStitch {
-        let height = self.parse_and_clamp(&self.rough_output_height, 800, 100, 10000);
+        let height = self.parse_and_clamp(&self.rough_output_height, 800, 100, u32::MAX);
         let sensitivity = self.parse_and_clamp(&self.sensitivity, 100, 1, 100);
         let scan_step = self.parse_and_clamp(&self.scan_step, 5, 1, 20);
         let quality = self.parse_and_clamp(&self.output_quality, 90, 1, 100);
