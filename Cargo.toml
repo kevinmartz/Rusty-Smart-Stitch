@@ -28,7 +28,7 @@ rayon = "1.10.0"
 webbrowser = "1.0.2"
 open = "5.3.1"
 octocrab = "0.42.1"
-tokio = { version = "1.41.1", features = ["full"] }
+tokio = { version = "1.43.1", features = ["full"] }
 semver = "1.0.23"
 self_update = "0.41.0"
 reqwest = { version = "0.12.9", features = ["json", "stream"] }
