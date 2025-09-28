@@ -55,6 +55,17 @@ fn save_as_png(slice_img: &DynamicImage, slice_path: &PathBuf) -> Result<()> {
 }
 
 fn save_as_webp(slice_img: &DynamicImage, slice_path: &PathBuf, quality: u32) -> Result<()> {
+    const WEBP_MAX_DIMENSION: u32 = 16383;
+
+    if slice_img.width() > WEBP_MAX_DIMENSION || slice_img.height() > WEBP_MAX_DIMENSION {
+        return Err(anyhow::anyhow!(
+            "Image dimensions ({}, {}) exceed WebP maximum limit of {} pixels. Try using a different output format or reduce height or width ( if you enabled it in advanced settings ) size.",
+            slice_img.width(),
+            slice_img.height(),
+            WEBP_MAX_DIMENSION
+        ));
+    }
+
     let output_file = std::fs::File::create(slice_path)?;
     let mut buf_writer = BufWriter::new(output_file);
     let rgba = slice_img.to_rgba8();
