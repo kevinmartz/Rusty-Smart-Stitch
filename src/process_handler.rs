@@ -109,6 +109,8 @@ impl RustySmartStitchApp {
     }
 
     pub fn start_processing(&mut self) {
+        let _ = self.save_last_used_settings();
+        
         if self.progress_rx.is_none() {
             if let Some(root_path) = &self.root_input_path {
                 self.processed_folder_count = 0;

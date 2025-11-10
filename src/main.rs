@@ -195,6 +195,7 @@ impl Default for RustySmartStitchApp {
         };
 
         let _ = app.load_profiles();
+        let _ = app.load_last_used_settings();
 
         app
     }
@@ -316,6 +317,85 @@ impl RustySmartStitchApp {
             if profiles_file.exists() {
                 let json = std::fs::read_to_string(profiles_file)?;
                 self.profiles = serde_json::from_str(&json)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn save_last_used_settings(&self) -> Result<(), anyhow::Error> {
+        if let Some(config_dir) = dirs::config_dir() {
+            let config_dir = config_dir.join("rusty_smart_stitch");
+            std::fs::create_dir_all(&config_dir)?;
+            let settings_file = config_dir.join("last_used_settings.json");
+            
+            let profile = Profile {
+                rough_output_height: self.rough_output_height.clone(),
+                sensitivity: self.sensitivity.clone(),
+                scan_step: self.scan_step.clone(),
+                edges: self.edges.clone(),
+                output_format: self.output_format.clone(),
+                output_quality: self.output_quality.clone(),
+                custom_width_enabled: self.custom_width_enabled,
+                custom_width: self.custom_width.clone(),
+                upscale_enabled: self.upscale_enabled,
+                upscale_factor: self.upscale_factor,
+                resize_enabled: self.resize_enabled,
+                resize_width: self.resize_width.clone(),
+                resize_height: self.resize_height.clone(),
+                waifu2x_enabled: self.waifu2x_enabled,
+                waifu2x_mode: self.waifu2x_mode.clone(),
+                waifu2x_noise_level: self.waifu2x_noise_level.clone(),
+                waifu2x_scale_mode: self.waifu2x_scale_mode.clone(),
+                waifu2x_scale_ratio: self.waifu2x_scale_ratio.clone(),
+                waifu2x_scale_width: self.waifu2x_scale_width.clone(),
+                waifu2x_scale_height: self.waifu2x_scale_height.clone(),
+                waifu2x_model: self.waifu2x_model.clone(),
+                waifu2x_tta: self.waifu2x_tta,
+                waifu2x_crop_size: self.waifu2x_crop_size.clone(),
+                waifu2x_batch_size: self.waifu2x_batch_size.clone(),
+                waifu2x_process: self.waifu2x_process.clone(),
+                waifu2x_output_depth: self.waifu2x_output_depth.clone(),
+            };
+            
+            let json = serde_json::to_string_pretty(&profile)?;
+            std::fs::write(settings_file, json)?;
+        }
+        Ok(())
+    }
+
+    fn load_last_used_settings(&mut self) -> Result<(), anyhow::Error> {
+        if let Some(config_dir) = dirs::config_dir() {
+            let settings_file = config_dir.join("rusty_smart_stitch").join("last_used_settings.json");
+            if settings_file.exists() {
+                let json = std::fs::read_to_string(settings_file)?;
+                let profile: Profile = serde_json::from_str(&json)?;
+                
+                self.rough_output_height = profile.rough_output_height;
+                self.sensitivity = profile.sensitivity;
+                self.scan_step = profile.scan_step;
+                self.edges = profile.edges;
+                self.output_format = profile.output_format;
+                self.output_quality = profile.output_quality;
+                self.custom_width_enabled = profile.custom_width_enabled;
+                self.custom_width = profile.custom_width;
+                self.upscale_enabled = profile.upscale_enabled;
+                self.upscale_factor = profile.upscale_factor;
+                self.resize_enabled = profile.resize_enabled;
+                self.resize_width = profile.resize_width;
+                self.resize_height = profile.resize_height;
+                self.waifu2x_enabled = profile.waifu2x_enabled;
+                self.waifu2x_mode = profile.waifu2x_mode;
+                self.waifu2x_noise_level = profile.waifu2x_noise_level;
+                self.waifu2x_scale_mode = profile.waifu2x_scale_mode;
+                self.waifu2x_scale_ratio = profile.waifu2x_scale_ratio;
+                self.waifu2x_scale_width = profile.waifu2x_scale_width;
+                self.waifu2x_scale_height = profile.waifu2x_scale_height;
+                self.waifu2x_model = profile.waifu2x_model;
+                self.waifu2x_tta = profile.waifu2x_tta;
+                self.waifu2x_crop_size = profile.waifu2x_crop_size;
+                self.waifu2x_batch_size = profile.waifu2x_batch_size;
+                self.waifu2x_process = profile.waifu2x_process;
+                self.waifu2x_output_depth = profile.waifu2x_output_depth;
             }
         }
         Ok(())

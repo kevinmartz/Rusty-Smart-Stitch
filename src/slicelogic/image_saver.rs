@@ -59,7 +59,7 @@ fn save_as_webp(slice_img: &DynamicImage, slice_path: &PathBuf, quality: u32) ->
 
     if slice_img.width() > WEBP_MAX_DIMENSION || slice_img.height() > WEBP_MAX_DIMENSION {
         return Err(anyhow::anyhow!(
-            "Image dimensions ({}, {}) exceed WebP maximum limit of {} pixels. Try using a different output format or reduce height or width ( if you enabled it in advanced settings ) size.",
+            "Image dimensions ({}, {}) exceed WebP maximum limit of {} pixels. Try using a different output format or reduce height size.",
             slice_img.width(),
             slice_img.height(),
             WEBP_MAX_DIMENSION

@@ -1,21 +1,18 @@
 [package]
 name = "rusty-smart-stitch"
-version = "1.0.9"
+version = "1.1.2"
 edition = "2021"
 
 [profile.release]
 opt-level = 2
 lto = "fat"
-debug = false
 codegen-units = 1
-strip = "symbols"
-panic = "abort"
 
 [build-dependencies]
 winres = "0.1.12"
 
 [dependencies]
-image = "0.25.5"
+image = "0.25.8"
 eframe = "0.29.1"
 native-dialog = "0.7.0"
 anyhow = "1.0.93"
@@ -24,7 +21,7 @@ egui_extras = "0.29.1"
 psd = "0.3.5"
 tempfile = "3.14.0"
 walkdir = "2.5.0"
-rayon = "1.10.0"
+rayon = "1.11.0"
 webbrowser = "1.0.2"
 open = "5.3.1"
 octocrab = "0.42.1"
