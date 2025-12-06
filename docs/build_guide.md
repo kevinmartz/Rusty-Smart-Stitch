@@ -25,6 +25,7 @@ This guide will walk you through building Rusty Smart Stitch from source.
    # Ubuntu/Debian
    sudo apt-get update
    sudo apt-get install build-essential pkg-config libwebp-dev libjpeg-dev
+   sudo apt update && sudo apt install -y libssl-dev pkg-config
 
    # Fedora
    sudo dnf install gcc-c++ webp-devel libjpeg-turbo-devel
